@@ -1,0 +1,382 @@
+<RpsProject>
+  <category value="Auto Regist Package Files" comment="自動生成ファイル" category_name="自動組み込みパッケージ">
+    <pack value="OtherPack" pack_name="packageManagerRegistIncludeAutoClient" output_dir=".\" win32="True" cafe="True" cafecompress="True">
+      <filter value="all files">
+        <file value="..\..\..\pkg\current\AccessoryDissolutionRateDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ActionCallMonsterDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ActionCaptionDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ActionJobDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ActionMessageTypeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ActionTargetSelectDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ActionTimingDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ActionWeaponDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ActionWeaponTypeSubDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\AgentAgeTypeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\AgentExtendSkillDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\AgentGenderTypeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\AgentJobTypeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\AgentLevelExperienceDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\AgentNameColorDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\AgentRaceTypeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\AgentSizeTypeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\AgentSkillLineDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\AgentSkillMasteryDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\AgentSkillPointDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\AgentSkillPointJobQuestDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\AgentSpellMasteryDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\AgentTokkunDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\AnluceaCostumeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ArasujiCounterDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\AttributeParamDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\AutodungTreasureDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\BattleAutoReviveDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ChangeColorPartDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\CharMakeEyeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\CharMakeFaceDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\CharMakeHairStyleDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\CharMakeSetDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\CharMakeSkinDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ChatStampDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ChatStampPackDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ChatStampSiborikomiDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ChatStampTopCmdDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ColosseumClassDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ColosseumSeasonDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\CommandDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\CommandShortcutDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\CompanionChatVoiceDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\CompanionNpcDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\CompanionNpcLevelDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\CondAlliXBaseDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\CondAlliXInfoDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ConditionalAllianceDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ContentsMapDestinationDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ContentsMapResourceDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ContentsResourceDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ContentsTargetCursorSettingDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\CostumeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\CounterStorageDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\CutinTextDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\DeathMonsterDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\DefenseBattleRankDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\DestinationMapDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\EmblemGrdDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\EmblemMrkDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\EmoteDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\EmoteSetDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\EmoteTextDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\EquipRenkinDropDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\EtenelCubeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\EventBattleListDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\EventErrorMessageDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\FaceAcceAttachTableDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\FaceIcon3DDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\FacialDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\FieldToubatuCheckBattleDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\FieldToubatuContinentDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\FieldToubatuStageDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\FishDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\FishZukanCameraDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\FoodBaseDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\FoodStatusParamDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\FrameWorkErrorMessageDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\GameCommonErrorMessageDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\GeneralTexTimerDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\GeneralTimerBaseDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\GenieChatDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\GenmaSkinDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\GenmaSummonDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\GfxErrorMessageDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\HiryuCoordinateDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\HiryuEquipDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\HousingDivisionNoDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\HousingErrorMessageDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\HousingTownPetitStageDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\HyoubanDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\InGameTVCastingQualityDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\InfoPopupDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\InfoPopupOverwrideDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ItemBinsenDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ItemCategoryDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ItemDaijinamonoDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ItemEquipmentDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ItemEquipmentDefaultRenkinDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ItemEquipmentTypeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ItemEquipmentUseRenkinTypeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ItemHistoryDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ItemMapDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ItemQualityTypeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ItemReleaseDateDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ItemRenkinDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ItemSetDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ItemSyokuninDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ItemWeaponTypeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\KakiokiInfoNpcIdDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\KaziItemDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\KaziSchedulerNoDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\KaziSozaiTokuseiDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\KaziTokugiDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\KyoukaiTenpoDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\LimitItemDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\LiveAgentBaseDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\LiveErrorMessageDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\LiveNpcTypeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\LiveShopProductListDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ManagedPackageDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\Map2DBgID2StageIdDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MatchingEntryDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MedalKoukanItemListDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MeguriaiDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MeiseiDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MeiseiRewardClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MemberInfoDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MemberInfoZoneDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MercenaryAITypeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MinionFormDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MokkouActionDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MokkouItemDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MokkouMokumePatternDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MokkouSozaiTokuseiDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MonsterMercenaryCameraDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MonsterMercenaryCoordinateDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MonsterMercenaryDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MonsterMercenaryListDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MonsterMercenarySeikakuDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MonsterMercenarySkillLineDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MonsterMercenarySkillMasteryDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MonsterMercenaryTenseiBonusDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MonsterMoveDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MonsterOddStatusDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MonsterTarotArcanaDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MonsterTarotMonsterDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MountBgmBaseDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MountEquipDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\MountModelBaseDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\NakamaSearchAreaDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\NaviListDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\NpcAdditionInfoDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\NpcApdMotPackDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\NpcCustomSeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\NpcDbDataIndexClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\NpcIntroductionDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\NpcIntroductionIndexDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\NpcIntroductionRewardDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\NumPopupDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\NumPopupSchTypeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\OddMessageDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\OddMonsterChangeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\OddStatusIconMsgDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\OnlineRenkinGamaModelIdDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ParamTreeKoukaDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\PassiveBaseDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\PassiveDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\PassiveSkillDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\PcBornDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\PlanColorDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\PreviewEquipDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ProfilePositionDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ProfileSubPositionDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ProfileToneDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\PurposeLargeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\PurposeMainDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\PurposeMiddleDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\PurposeOtherDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\PurposeScenarioDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\PurposeSmallDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\QuestInfoDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\QuestIraisyoHosyuDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\QuestIraisyoNpcDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\QuestIraisyoTextDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\RankDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\RankFishRewardDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\RankRewardDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\RankTimeTrialDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ReadPictureDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\RecipeItemDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\RenkinAccessoryRecipeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\RenkinActionDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\RenkinRanpuItemDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\RenkinSpecialRecipeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\RenkinSystemRecipeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\RenkinTuboItemDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ReplaceMapNameTextDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ReplicaFurnitureListDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\RyoukaiToubatuCheckBattleDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\RyoukaiToubatuContinentDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\RyoukaiToubatuStageDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\SaihouActionDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\SaihouConditionDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\SaihouItemDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\SaihouItoNoSuberiDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\SaihouResourceDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\SaihouSozaiResourceDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\SaihouSozaiTokuseiDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\SavePopPointDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\SetValTableDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ShieldCoverDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\SiblingEditEquipDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\SimpleWordDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\SlideRateTableDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\SlideValTableDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\SoundBgmDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\SoundMePlayTimeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\StageAdditionInfoDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\StageContentsConfigDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\StageoutArrangeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\StampCardDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\StandardParamDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\StatusParamBaseDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\StatusParamDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\StringLimitationDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\SyokuninCommonDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\SyokuninLevelDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\SyokuninSigotoDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\SyougouDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\SyougouMotionDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\SystemChatDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\TabibitoBazaarCategoryDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\TabibitoBazaarMenuDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\TabibitoBazaarRenkinDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\TabibitoBazaarShopDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\TargetSelectDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\TatujinOrbArtifactDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\TatujinOrbExperienceDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\TatujinOrbJewelDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\TatujinOrbLithographDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\TatujinOrbPointDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\TatujinOrbSkillLineDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\TatujinOrbSkillMasteryDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\TeamLvDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\TextBattleDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ToDoListLargePurposeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ToDoListSmallPurposeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ToubatuMonsterCameraDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ToubatuMonsterChildPartDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\ToubatuMonsterDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\TouchShortcutDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\TouchShortcutSchDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\TownPetitWorldIsgDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\TreasureModelTypeDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\TreasurePhotoDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\TreasurePhotoPointDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\TurilureDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\TurizaoDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\TyouriActionDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\TyouriItemDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\WeeklyMissionRewardDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\WorldErrorMessageDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\WorldOverrideLocationTitleDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\YadoyaInnDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\YubinkyokuTenpoDataClient.*.pkg"/>
+        <file value="..\..\..\pkg\current\YuraizaMemoryHairDataClient.*.pkg"/>
+        <file value="..\..\..\eventText\ja\current\subPackage01Client.*.etp" encrypt="True"/>
+        <file value="..\..\..\eventText\ja\current\subPackage02Client.*.etp" encrypt="True"/>
+        <file value="..\..\..\eventText\ja\current\subPackage04Client.*.etp" encrypt="True"/>
+        <file value="..\..\..\eventText\ja\current\subPackage07Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage08Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage09Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage11Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage12Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage13Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage16Client.*.etp" encrypt="True"/>
+        <file value="..\..\..\eventText\ja\current\subPackage17Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage18Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage19Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage20Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage22Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage23Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage24Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage25Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage26Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage27Client.*.etp" encrypt="True"/>
+        <file value="..\..\..\eventText\ja\current\subPackage28Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage29Client.*.etp" encrypt="True"/>
+        <file value="..\..\..\eventText\ja\current\subPackage30Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage34Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage36Client.*.etp" encrypt="True"/>
+        <file value="..\..\..\eventText\ja\current\subPackage37Client.*.etp" encrypt="True"/>
+        <file value="..\..\..\eventText\ja\current\subPackage39Client.*.etp" encrypt="True"/>
+        <file value="..\..\..\eventText\ja\current\subPackage40Client.*.etp" encrypt="True"/>
+        <file value="..\..\..\eventText\ja\current\subPackage41Client.*.etp" encrypt="True"/>
+        <file value="..\..\..\eventText\ja\current\subPackage43Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage46Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage48Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage50Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage55Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage57Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage58Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage59Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage60Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage61Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage62Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage64Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage65Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage66Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage67Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage68Client.*.etp" encrypt="True"/>
+        <file value="..\..\..\eventText\ja\current\subPackage69Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage70Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage72Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage73Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage74Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage77Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage79Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage80Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage82Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage86Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage88Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage89Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage90Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage96Client.*.etp" encrypt="True"/>
+        <file value="..\..\..\eventText\ja\current\subPackage120Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage122Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage125Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage127Client.*.etp" encrypt="True"/>
+        <file value="..\..\..\eventText\ja\current\subPackage128Client.*.etp" encrypt="True"/>
+        <file value="..\..\..\eventText\ja\current\subPackage131Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage143Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\subPackage150Client.*.etp"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_2DMAP.*.etp" excludeCompress="True"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_BATTLE.*.etp" excludeCompress="True"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_BG_AGENT_NAME.*.etp" excludeCompress="True"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_BG_GIMMICK.*.etp" excludeCompress="True"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_CAFE_PLAYMODECHANGE.*.etp" excludeCompress="True"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_COMMANDWINDOW.*.etp" excludeCompress="True" encrypt="True"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_COMMUNICATIONWINDOW.*.etp" excludeCompress="True"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_CONTINENTAL_NAME.*.etp" excludeCompress="True"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_DUBBLE_SURECHIGAI.*.etp" excludeCompress="True"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_EVENT.*.etp" excludeCompress="True"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_GUILD.*.etp" excludeCompress="True"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_HOUSING.*.etp" excludeCompress="True"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_ITEM.*.etp" excludeCompress="True"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_KEYNAME.*.etp" excludeCompress="True"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_LIVE.*.etp" excludeCompress="True"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_LIVE_SAVE.*.etp" excludeCompress="True"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_LOADING_TIPS.*.etp" excludeCompress="True"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_LOCATIONTITLE.*.etp" excludeCompress="True"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_MENU_LOADING.*.etp" excludeCompress="True"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_NORIMONO.*.etp" excludeCompress="True"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_NPC_DB.*.etp" excludeCompress="True" encrypt="True"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_PC_SAVE_POPPOINT_NAME.*.etp" excludeCompress="True"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_SHOP.*.etp" excludeCompress="True"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_STAGE_ID.*.etp" excludeCompress="True"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_SYSTEM.*.etp" excludeCompress="True"/>
+        <file value="..\..\..\eventText\ja\current\smldt_msg_pkg_SYSTEM_MENU.*.etp" excludeCompress="True"/>
+        <file value="..\..\..\luaPackage\current\lpkMenuCounterStorageMenuClient.*.lpk"/>
+        <file value="..\..\..\luaPackage\current\lpkMenuIconToScheduerClient.*.lpk"/>
+        <file value="..\..\..\luaPackage\current\lpkMenuRegistMappingClient.*.lpk"/>
+        <file value="..\..\..\luaPackage\current\lpkMenuProvinceMenuIconMappingClient.*.lpk"/>
+        <file value="..\..\..\luaPackage\current\lpkEventPartySyncInfoClient.*.lpk"/>
+        <file value="..\..\..\luaPackage\current\lpkMenuIconDaijinamonoClient.*.lpk"/>
+        <file value="..\..\..\luaPackage\current\lpkWorldStageJumpSeDataClient.*.lpk"/>
+        <file value="..\..\..\luaPackage\current\lpkWorldStageBgmContinueClient.*.lpk"/>
+        <file value="..\..\..\luaPackage\current\lpkWorldStageloadAnyPkgsDataClient.*.lpk"/>
+        <file value="..\..\..\luaPackage\current\lpkBattleInFightEnvSettingDataClient.*.lpk"/>
+        <file value="..\..\..\luaPackage\current\lpkBattleInFightStageSettingDataClient.*.lpk"/>
+        <file value="..\..\..\luaPackage\current\lpkMenuSimpleInfoPartsClient.*.lpk"/>
+        <file value="..\..\..\luaPackage\current\lpkMenuSimpleInfoDataClient.*.lpk"/>
+        <file value="..\..\..\luaPackage\current\lpkMenuItemEquipPointClient.*.lpk"/>
+      </filter>
+    </pack>
+  </category>
+</RpsProject>
