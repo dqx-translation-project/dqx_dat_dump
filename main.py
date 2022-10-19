@@ -3,12 +3,12 @@ import os
 from datfile import DatEntry
 from extensions import EXTENSIONS
 from idxfile import IdxFile
-
+from rpsfile import RpsFile
 
 # example: C:\Program Files (x86)\SquareEnix\DRAGON QUEST X\Game\Content\Data\data00000000.win32.idx
 idx_file = ""
 
-def scan_idx():
+def unpack_idx():
     idx = IdxFile(idx_file)
     num_files = idx.records['count']
     print(f"{num_files} rows found.")
@@ -29,6 +29,10 @@ def scan_idx():
             with open(f"out/{dat_file_name}/{filename}", "wb") as f:
                 f.write(file)
 
+            if filename.split(".")[-1] == "rps":
+                rps = RpsFile(f"{os.getcwd()}\\out\\{dat_file_name}\\{filename}")
+                rps.dump()
+
 
 if __name__ == "__main__":
-    scan_idx()
+    unpack_idx()
