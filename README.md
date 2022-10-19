@@ -74,3 +74,6 @@ IonCannon for their work in reversing these files. FFXIV shares a ton of similar
 
 NotAdam's Lumina project for helping me understand how dats spanned across multiple files are evaluated:
 - https://github.com/NotAdam/Lumina/blob/9cf00f703c1a9eb120d3ecf11a5287e3b077f5ce/src/Lumina/Data/Structs/SqPackIndexHeader.cs#L31
+
+@Andoryuuta for reversing how the RPS info struct table is put together to calculate the filenames/extensions.
+- https://gist.github.com/Andoryuuta/cab93882cd616ea519522b21d663a65f#file-sedbres_parser-py-L27

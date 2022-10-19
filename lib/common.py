@@ -1,7 +1,9 @@
 from binascii import hexlify
 import csv
+import os
 from struct import unpack
-from io import BytesIO
+import sqlite3
+
 
 def write_file(path: str, data):
     with open(path, "wb") as game_file:
@@ -41,6 +43,7 @@ def write_hashed_filename(hashed_filename: str, filename="", hex="", dat_file=""
         writer = csv.writer(file)
         writer.writerows(orig_data)
 
+
 def read_le(byte_str: bytes):
     return unpack("<i", byte_str)[0]
 
@@ -75,3 +78,35 @@ def get_filename(hex, filename="", hashed_filename="", hex_dict="lookup.csv"):
                 if row[3] == hex:
                     return row
         return False
+
+
+def sqlite_read(query):
+    escaped_text = query.replace("'", "''")
+
+    try:
+        db_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "filedb.db"))
+        conn = sqlite3.connect(db_file)
+        cursor = conn.cursor()
+        selectQuery = query
+        cursor.execute(selectQuery)
+        results = cursor.fetchone()
+
+        if results is not None:
+            return results[0].replace("''", "'")
+        else:
+            return None
+
+    except sqlite3.Error as e:
+        raise Exception(e)
+    finally:
+        if conn:
+            conn.close()
+
+
+def get_file_by_hex(hex):
+    if type(hex) is bytes:
+        hex = split_hex(hexlify(hex).decode())
+    else:
+        hex = split_hex(hex)
+
+    return sqlite_read(f"SELECT friendly_name FROM files WHERE hex_string = '{hex}'")
