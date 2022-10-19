@@ -1,14 +1,14 @@
 # a lot of these are probably not their true extension, but helps
 # identify what type of file it is based on the file's header.
 EXTENSIONS = {
-    b"\x45\x56\x54\x58\x10\x00\x00": ".etp",
+    b"\x45\x56\x54\x58\x10\x00\x00": ".etp",  # dialog files
     b"\x53\x45\x44\x42\x6C\x79\x62": ".sedblyb",
     b"\x61\x73\x74\x62\x01\x00\x00": ".astb",
     b"\x61\x73\x74\x62\x02\x00\x00": ".astb",
     b"\x61\x73\x74\x62\x03\x00\x00": ".astb",
     b"\x61\x73\x74\x62\x04\x00\x00": ".astb",
-    b"\x53\x45\x44\x42\x52\x45\x53": ".sedbres",
-    b"\x89\x50\x4E\x47\x51\x01\x01": ".png_inval",
+    b"\x53\x45\x44\x42\x52\x45\x53": ".rps",  # SEDBRES
+    b"\x89\x50\x4E\x47\x51\x01\x01": ".png_inval",  # real png, but they all appear to be encrypted
     b"\x6D\x64\x6C\x62\x01\x00\x00": ".mdlb",
     b"\x6D\x64\x6C\x62\x02\x00\x00": ".mdlb",
     b"\x64\x65\x66\x62\x03\x00\x00": ".defb",
@@ -25,5 +25,7 @@ EXTENSIONS = {
     b"\x53\x45\x44\x42\x53\x43\x42": ".sedbscb",
     b"\x53\x45\x44\x42\x53\x53\x43": ".scd",  # SEDBSSCF files, which are audio. can play them in vgmstream
     b"\x32\x30\x31\x30\x30\x31\x31": ".20100114",  # not sure what this is
-    b"\x3C\x52\x70\x73\x50\x72\x6F": ".xml"  # this is an <RpsProject> file, but it's an xml
+    b"\x3C\x52\x70\x73\x50\x72\x6F": ".xml",  # this is an <RpsProject> file, but it's an xml
+    b"\x43\x52\x59\x09":             ".cry",  # CRY file, which is encrypted. can't read these right now
+    b"\x4D\x4C\x42\x44\x02\x00\x00": ".mlbd"
 }
