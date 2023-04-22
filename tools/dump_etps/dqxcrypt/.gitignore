@@ -1,0 +1,4 @@
+./**/node_modules
+__pycache__/
+ManagedPackageDataClient.win32.pkg
+logs/*
