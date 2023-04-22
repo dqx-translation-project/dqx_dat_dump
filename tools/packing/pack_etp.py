@@ -612,6 +612,8 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--recrypt", default=False, action="store_true", help="Recrypt files. DQX must be open if you pass this. This only works when used with (-e and -j) or (-a).")
     args = parser.parse_args()
 
+    os.makedirs("new_etp", exist_ok=True)
+
     if args.pack_all:
         build_all()
         if args.recrypt:
