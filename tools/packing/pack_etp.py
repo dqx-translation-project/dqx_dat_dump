@@ -189,6 +189,7 @@ def recalculate_headers(file_obj: object):
     file_obj.write(pack_uint(text_size) + b"\x00\x00\x00\x00")
     file_obj.seek(0, 2)
     write_foot(file_obj=file_obj)
+
     # calculate new size for blja header
     file_obj.seek(80)
     blja_start = file_obj.tell()
@@ -199,6 +200,7 @@ def recalculate_headers(file_obj: object):
     file_obj.write(pack_uint(blja_size))
     file_obj.seek(0, 2)
     write_foot(file_obj=file_obj)
+
     # calculate new size for evtx header
     file_obj.seek(16)
     evtx_start = file_obj.tell()
