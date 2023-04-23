@@ -14,6 +14,7 @@ All values are read in little endian (LE) unless otherwise noted.
 
 ### EVTX (pertains to all file versions)
 
+```
 0x000: Signature                4c;     "EVTX"
 0x004: Header length            Int32;
 0x008: Size of EVTX contents    Int32;  Size of data between "EVTX" and "FOOT"
@@ -23,6 +24,7 @@ All values are read in little endian (LE) unless otherwise noted.
                                         EVTX flags are always b"\x01\x00".
 0x00e: File version             Short;  b"\x00\x00", b"\x00\x01", b"\x00\x02" or b"\x00\x04".
                                         Indicates the type of ETP file this is.
+```
 
 ### CMNH (Common Header?)
 
