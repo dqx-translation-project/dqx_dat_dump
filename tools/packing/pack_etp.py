@@ -434,7 +434,7 @@ def get_duplicate_offsets_4(src_etp: str):
             else:
                 offset_dict[offset] = [str_id]
 
-            str_pos += short
+            str_pos += ushort
 
         # the offsets themselves are irrelevant for packing because our data will have
         # different offsets, so just group the string ids together to get the duplicates.
