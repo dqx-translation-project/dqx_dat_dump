@@ -133,5 +133,6 @@ All strings are null terminated in all file versions.
 
 For v1 and v4 files specifically, each TEXT entry must be an even number of bytes, with the next entry starting at an odd byte. If the string (including null terminator) contains an odd number of bytes, an additional "00" is added to the end of the string to pad it.
 
+Additionally, v1 files always start with an empty string as the first entry in their TEXT table (b"\x00\x00).
 
 At the end of the file, all remaining sections (TEXT, BLJA and EVTX) are concluded with a "FOOT", length of foot and padded for alignment to 16 total bytes.
