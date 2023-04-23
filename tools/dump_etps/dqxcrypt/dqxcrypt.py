@@ -2,6 +2,7 @@ from collections import namedtuple
 import io
 import struct
 import sys
+import frida
 from frida_agent import FridaAgent
 from managed_package_data_client import ManagedPackageDataClient
 
@@ -104,10 +105,13 @@ def main():
 
 
     print('Attaching to game client...')
-    
+
     # Attach to the game
-    agent = FridaAgent()
-    agent.attach_game()
+    try:
+        agent = FridaAgent()
+        agent.attach_game()
+    except frida.ProcessNotFoundError:
+        sys.exit("Could not find process DQXGame.exe. Cannot continue.")
 
     if (sys.argv[1] == 'encrypt' or sys.argv[1] == 'encrypt_raw'):
         is_raw = sys.argv[1].endswith('raw')

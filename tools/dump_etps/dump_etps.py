@@ -3,13 +3,15 @@ import os
 from subprocess import run
 import sqlite3
 import sys
+import frida
 sys.path.append("../../")  # hack to use tools
 from tools.lib.datfile import DatEntry
 from tools.lib.extensions import EXTENSIONS
 from tools.lib.idxfile import IdxFile
 from tools.idx_searcher.main import get_idx_files
+from tools.globals import GAME_DATA_DIR
 
-GAME_DATA_DIR = "C:\\Program Files (x86)\\SquareEnix\\DRAGON QUEST X\\Game\\Content\\Data"
+
 DB_PATH = "../import_sql/dat_db.db"
 DB_CONN = sqlite3.connect(DB_PATH)
 DB_CUR = DB_CONN.cursor()
@@ -29,7 +31,7 @@ def find_etps():
 
 
 def get_file_data(dat_filename: str, offset: int):
-    dat_file = GAME_DATA_DIR + "\\" + dat_filename
+    dat_file = "/".join([GAME_DATA_DIR, dat_filename])
     file = DatEntry(dat_file, offset)
     return file.data()
 
@@ -116,7 +118,9 @@ def decrypt_file(file: str):
         
         if file.replace(".rawenc", "") == etp_file:
             os.chdir("dqxcrypt")
-            run(["../../../venv/Scripts/python.exe", "dqxcrypt.py", "decrypt_raw", f"../etps/{file}", key])
+            run_decrypt = run(["../../../venv/Scripts/python.exe", "dqxcrypt.py", "decrypt_raw", f"../etps/{file}", key])
+            if run_decrypt.returncode != 0:
+                sys.exit()
             os.chdir("..")
             return True
     return False

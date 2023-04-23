@@ -4,10 +4,12 @@ import json
 import os
 from struct import unpack, iter_unpack
 import sys
-
-
-def le2int(value: bytes, fmt: str) -> int:
-    return unpack(fmt, value)[0]
+sys.path.append("../../")  # hack to use tools
+from tools.lib.fileops import (
+    unpack_uint,
+    unpack_ushort,
+    read_cstr
+)
 
 
 def write_to_json(orig_filename: str, data: list, locale: str):
@@ -28,16 +30,6 @@ def determine_etp_version(file: str) -> int:
     return int(version.hex())
 
 
-def read_cstr(file_obj: object) -> str:
-    buf = bytearray()
-    while True:
-        char = file_obj.read(1)
-        if char != b"\x00":
-            buf.extend(char)
-        else:
-            return buf.decode(encoding="utf-8")
-
-
 def unpack_etp_0_2(file: str):
     with open(file, "rb") as f:
         evtx_header = unpack("4s", f.read(4))[0]
@@ -46,7 +38,7 @@ def unpack_etp_0_2(file: str):
         f.seek(80)  # jump to INDX structure
         f.read(4)  # jump passed INDX signature
         f.read(4)  # jump passed header length
-        indx_size = le2int(value=f.read(4), fmt="<I")
+        indx_size = unpack_uint(f.read(4))
         f.read(4)  # jump passed padding
         indx_pos = f.tell()
         indx_contents = f.read(indx_size)
@@ -65,7 +57,7 @@ def unpack_etp_0_2(file: str):
                 continue
             f.seek(text_pos + offset)
 
-            text_str = read_cstr(file_obj=f)
+            text_str = read_cstr(f)
             ja_record = {text_str: text_str}
             en_record = {text_str: ""}
             ja_records[string_id] = ja_record
@@ -83,12 +75,12 @@ def unpack_etp_1(file: str):
         if evtx_header != b"EVTX":
             return "Not an ETP file."
         f.seek(44)  # jump to CMNH section that has number of offsets in file
-        offset_count = le2int(value=f.read(4), fmt="<I")
+        offset_count = unpack_uint(f.read(4))
         f.seek(88)  # jump to INDX structure
-        indx_size = le2int(value=f.read(4), fmt="<I")
+        indx_size = unpack_uint(f.read(4))
         f.seek(4, 1)
         indx_contents = f.read(indx_size)
-        offset_table_size = le2int(value=indx_contents[2:4], fmt="<H")  # size of offset table. if number of offsets is bigger than this, the table has a second section of offsets read in <I
+        offset_table_size = unpack_ushort(indx_contents[2:4])  # size of offset table. if number of offsets is bigger than this, the table has a second section of offsets read in <I
         f.seek(32, 1)
         text_pos = f.tell()
 
@@ -100,14 +92,14 @@ def unpack_etp_1(file: str):
         indx_pos = 20  # 20 is start of offsets in indx
         while iterate != offset_table_size:
             iterate += 1
-            offset = le2int(value=indx_contents[indx_pos:indx_pos+2], fmt="<H")
+            offset = unpack_ushort(indx_contents[indx_pos:indx_pos+2])
             if offset == 0 or offset in offsets_used:
                 indx_pos += 2
                 continue
 
             f.seek(text_pos + (offset * 2))
 
-            text_str = read_cstr(file_obj=f)
+            text_str = read_cstr(f)
 
             ja_records[offset] = {text_str: text_str}
             en_records[offset] = {text_str: ""}
@@ -126,14 +118,14 @@ def unpack_etp_1(file: str):
 
             while iterate != offset_count:
                 iterate += 1
-                offset = le2int(value=indx_contents[next_indx_pos:next_indx_pos+4], fmt="<I")
+                offset = unpack_uint(indx_contents[next_indx_pos:next_indx_pos+4])
                 if offset == 0 or offset in offsets_used:
                     next_indx_pos += 4
                     continue
 
                 f.seek(text_pos + (offset * 2))
 
-                text_str = read_cstr(file_obj=f)
+                text_str = read_cstr(f)
 
                 ja_records[offset] = {text_str: text_str}
                 en_records[offset] = {text_str: ""}
@@ -149,7 +141,7 @@ def unpack_etp_4(file: str):
         if evtx_header != b"EVTX":
             return "Not an ETP file."
         f.seek(88)  # jump to INDX length
-        indx_size = le2int(value=f.read(4), fmt="<I")
+        indx_size = unpack_uint(f.read(4))
         f.read(4)  # jump passed junk
         indx_table = f.read(indx_size)  # read in entire indx table
         f.seek(-indx_size, 1)  # go backwards
@@ -199,7 +191,7 @@ def unpack_etp_4(file: str):
 
             f.seek(text_pos + (offset * 2))
 
-            text_str = read_cstr(file_obj=f)
+            text_str = read_cstr(f)
             ja_records[string_id[0]] = {text_str: text_str}
             en_records[string_id[0]] = {text_str: ""}
             offsets_written.append(offset)

@@ -8,11 +8,11 @@ import os
 from struct import unpack, pack
 import sys
 sys.path.append("../../")  # hack to use tools
-from tools.packing.pack_etp import find_versioned_files
-
-
-def readcstr(f):
-    return ''.join(iter(lambda: f.read(1).decode('utf-8'), '\x00'))
+from tools.lib.fileops import (
+    pack_uint,
+    unpack_uint,
+    read_cstr
+)
 
 
 def get_alignment(file_version: int):
@@ -56,13 +56,12 @@ def get_alignment_count(integer: int, alignment: int):
 
 
 def pack_etp_rps():
-    versioned_files = find_versioned_files(4)
     with open("../dump_etps/rps/packageManagerRegistIncludeAutoClient.rps", "rb") as f:
         header_data = f.read(48)
-        alignment = get_alignment(file_version=unpack("<I", header_data[8:12])[0])
+        alignment = get_alignment(unpack_uint(header_data[8:12]))
 
-        resource_count = unpack("<I", header_data[32:36])[0]
-        path_table_offset = unpack("<I", header_data[36:40])[0]
+        resource_count = unpack_uint(header_data[32:36])
+        path_table_offset = unpack_uint(header_data[36:40])
 
         resource_size = 16
         resource_table = f.read(resource_count * resource_size)
@@ -76,7 +75,7 @@ def pack_etp_rps():
         f.seek(file_base_offset + path_table_offset, os.SEEK_SET)
         resource_names = []
         for i in range(resource_count):
-            s = readcstr(f)
+            s = read_cstr(f)
             resource_names.append(s)
 
         # need to get the offset of the last real file resource in the table and copy the rest down.
@@ -84,14 +83,14 @@ def pack_etp_rps():
         # are RESOURCE_ID and RESOURCE_TYPE, which are meta resources.
         resource_table_len = len(resource_table)
         last_entry = resource_table[resource_table_len-48:resource_table_len-32]
-        entry_offset = unpack("<I", last_entry[4:8])[0]
-        entry_size = unpack("<I", last_entry[8:12])[0]
+        entry_offset = unpack_uint(last_entry[4:8])
+        entry_size = unpack_uint(last_entry[8:12])
         final_pos = file_write_start + entry_offset + entry_size
 
         resource_type = resource_table[resource_table_len-32:resource_table_len-16]
-        resource_type_size = unpack("<I", resource_type[8:12])[0]
+        resource_type_size = unpack_uint(resource_type[8:12])
         resource_id = resource_table[resource_table_len-16:]
-        resource_id_size = unpack("<I", resource_id[8:12])[0]
+        resource_id_size = unpack_uint(resource_id[8:12])
 
         # read all file data. will append all of this at the end of our new file.
         f.seek(final_pos)
@@ -154,7 +153,7 @@ def pack_etp_rps():
 
         # update new path table offset location
         f.seek(36)
-        f.write(pack("<I", new_path_table_offset))
+        f.write(pack_uint(new_path_table_offset))
 
         # update the resource table with the new offsets we wrote using the
         # offset_list we generated
@@ -171,19 +170,19 @@ def pack_etp_rps():
         for i in range(1):
             (index, offset, size, flags) = unpack("<IIII", f.read(16))
             f.seek(-12, 1)
-            f.write(pack("<I", new_resource_type_loc))
+            f.write(pack_uint(new_resource_type_loc))
             f.seek(8, 1)
 
         # update the RESOURCE_ID
         for i in range(1):
             (index, offset, size, flags) = unpack("<IIII", f.read(16))
             f.seek(-12, 1)
-            f.write(pack("<I", new_resource_id_loc))
+            f.write(pack_uint(new_resource_id_loc))
             f.seek(8, 1)
 
         # update the new total file size
         f.seek(0, 2)
-        total_size = pack("<I", f.tell())
+        total_size = pack_uint(f.tell())
         f.seek(16)
         f.write(total_size)
 

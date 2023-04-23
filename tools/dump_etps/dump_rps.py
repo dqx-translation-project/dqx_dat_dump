@@ -1,4 +1,3 @@
-import csv
 import glob
 import os
 from subprocess import run, PIPE
@@ -6,13 +5,11 @@ import sqlite3
 import sys
 sys.path.append("../../")  # hack to use tools
 from tools.lib.datfile import DatEntry
-from tools.lib.extensions import EXTENSIONS
 from tools.lib.idxfile import IdxFile
 from tools.lib.rpsfile import RpsFile
-from tools.idx_searcher.main import get_idx_files
+from tools.globals import GAME_DATA_DIR
 
-GAME_DATA_DIR = "C:\\Program Files (x86)\\SquareEnix\\DRAGON QUEST X\\Game\\Content\\Data"
-CLARITY_HEX_DICT = "C:\\Users\\mebo\\Documents\\github\\dqx-translation-project\\dqxclarity\\app\\misc_files\\hex_dict.csv"
+
 DB_PATH = "../import_sql/dat_db.db"
 DB_CONN = sqlite3.connect(DB_PATH)
 DB_CUR = DB_CONN.cursor()
@@ -59,7 +56,7 @@ def decrypt_cry_files():
         run(["../../../venv/Scripts/python.exe", "dqxcrypt.py", "bruteforce", f"../{file}", "../rps/packageManagerRegistIncludeAutoClient_rps/ManagedPackageDataClient.win32.pkg"])
         os.chdir("..")
         new_name = file.split(".cry")[0]
-        os.rename(src=f"{file}.dec", dst=new_name)
+        os.replace(src=f"{file}.dec", dst=new_name)
         os.remove(file)
 
 

@@ -7,13 +7,14 @@ import requests
 from shutil import copy
 import sqlite3
 from zipfile import ZipFile as zfile
+import sys
+sys.path.append("../../")  # hack to use tools
+from tools.globals import GITHUB_URL
 
 
-GITHUB_URL = "https://github.com/dqx-translation-project/dqx_translations/archive/refs/heads/main.zip"
 DB_PATH = "../import_sql/dat_db.db"
 DB_CONN = sqlite3.connect(DB_PATH)
 DB_CUR = DB_CONN.cursor()
-
 
 
 def get_latest_translation_files():

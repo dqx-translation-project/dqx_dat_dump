@@ -1,15 +1,16 @@
 import glob
 import os
-from struct import pack
 import sqlite3
 import sys
-sys.path.append("../../")  # hack to use tools
-from tools.lib.idxfile import IdxFile
-from tools.idx_searcher.main import find_file
 import zlib
+sys.path.append("../../")  # hack to use tools
+from tools.idx_searcher.main import find_file
+from tools.globals import GAME_DATA_DIR
+from tools.lib.fileops import (
+    pack_uint,
+    pack_ushort
+)
 
-
-DQX_INSTALL_DIR="C:/Program Files (x86)/SquareEnix/DRAGON QUEST X/Game/Content/Data"
 DB_PATH = "../import_sql/dat_db.db"
 DB_CONN = sqlite3.connect(DB_PATH)
 DB_CUR = DB_CONN.cursor()
@@ -25,7 +26,7 @@ def get_record(etp_file: str):
 
 def get_idx_offset(idx_file: str, file_dir_hash: str):
     byte_search = bytearray.fromhex(file_dir_hash)
-    idx_path = "/".join([DQX_INSTALL_DIR, idx_file])
+    idx_path = "/".join([GAME_DATA_DIR, idx_file])
     with open(idx_path, "rb") as f:
         data = f.read()
     offset = data.find(byte_search)
@@ -36,7 +37,7 @@ def get_idx_offset(idx_file: str, file_dir_hash: str):
 
 def calculate_new_offset(offset: int, dat_num: int):
     new_offset = offset // 8 | dat_num << 1
-    return pack("<I", new_offset)
+    return pack_uint(new_offset)
 
 
 def calculate_padding(offset: int):
@@ -89,12 +90,12 @@ def generate_dat_entry(uncomp_len: int, file_chunk_list: list):
     block_table = bytearray()
 
     # these are in order of the block table in the dat file
-    header_length = pack("<I", 0)  # we don't know this yet, but we'll update it later. this is beginning of header to end of padding
-    file_type = pack("<I", 2)  # should always be 2 for our purposes
-    uncomp_length = pack("<I", uncomp_len)  # total actual file size
-    unk_value = pack("<I", 0)  # dunno what this value is, but making it 0 still allows it to load.
-    max_buffer_size = pack("<I", 60000)  # _seems_ arbitrary. this must be the same value as the largest chunk
-    num_blocks = pack("<I", len(file_chunk_list))  # we don't know what the offsets are yet, but we do know how many blocks there will be.
+    header_length = pack_uint(0)  # we don't know this yet, but we'll update it later. this is beginning of header to end of padding
+    file_type = pack_uint(2)  # should always be 2 for our purposes
+    uncomp_length = pack_uint(uncomp_len)  # total actual file size
+    unk_value = pack_uint(0)  # dunno what this value is, but making it 0 still allows it to load.
+    max_buffer_size = pack_uint(60000)  # _seems_ arbitrary. this must be the same value as the largest chunk
+    num_blocks = pack_uint(len(file_chunk_list))  # we don't know what the offsets are yet, but we do know how many blocks there will be.
 
     # put what we know so far together
     block_table.extend(header_length)
@@ -123,10 +124,10 @@ def generate_dat_entry(uncomp_len: int, file_chunk_list: list):
         compressed_chunk = compress_chunk(block)
 
         # build the block header
-        header_length = pack("<I", 16)
-        padding = pack("<I", 0)
-        compressed_length = pack("<I", len(compressed_chunk))
-        uncompressed_length = pack("<I", len(block))
+        header_length = pack_uint(16)
+        padding = pack_uint(0)
+        compressed_length = pack_uint(len(compressed_chunk))
+        uncompressed_length = pack_uint(len(block))
 
         # append block header
         block_table.extend(header_length)
@@ -155,16 +156,16 @@ def generate_dat_entry(uncomp_len: int, file_chunk_list: list):
 
     # at this point, all of our data is in block_table. now we need to go back to the beginning
     # and update our offsets to tell the data entry header where all of these files are.
-    block_table[0:4] = pack("<I", offset_start)  # update the data entry header with the size
+    block_table[0:4] = pack_uint(offset_start)  # update the data entry header with the size
 
     # iterate over the block_offsets list to update the offsets in the data entry header
     block_offset_start = 24
     for block in block_offsets:
-        block_table[ block_offset_start : block_offset_start + 4 ] = pack("<I", block["offset"])
+        block_table[ block_offset_start : block_offset_start + 4 ] = pack_uint(block["offset"])
         block_offset_start += 4
-        block_table[ block_offset_start : block_offset_start + 2 ] = pack("<H", block["block_size"])
+        block_table[ block_offset_start : block_offset_start + 2 ] = pack_ushort(block["block_size"])
         block_offset_start += 2
-        block_table[ block_offset_start : block_offset_start + 2 ] = pack("<H", block["decompressed_size"])
+        block_table[ block_offset_start : block_offset_start + 2 ] = pack_ushort(block["decompressed_size"])
         block_offset_start += 2
 
     return block_table
@@ -182,7 +183,7 @@ def write_to_dat(idx_file: str, idx_offset: int, file: str):
     chunked_data = generate_chunk_list(file)
     dat_data_to_write = generate_dat_entry(uncomp_len=chunked_data[1], file_chunk_list=chunked_data[0])
 
-    path_to_idx = "/".join([DQX_INSTALL_DIR, idx_file])
+    path_to_idx = "/".join([GAME_DATA_DIR, idx_file])
     with open(path_to_idx, "r+b") as idx_f:
 
         # jump straight to where the offset needs to be written
@@ -190,7 +191,7 @@ def write_to_dat(idx_file: str, idx_offset: int, file: str):
 
         # TODO: need to come back here and support writing to other dat files at a later time
         dat_file = idx_file.replace(".idx", ".dat0")
-        path_to_dat = "/".join([DQX_INSTALL_DIR, dat_file])
+        path_to_dat = "/".join([GAME_DATA_DIR, dat_file])
 
         with open(path_to_dat, "r+b") as dat_f:
             dat_f.seek(0, 2)

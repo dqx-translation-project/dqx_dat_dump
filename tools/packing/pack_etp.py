@@ -2,10 +2,19 @@ import argparse
 import glob
 import json
 import os
-from struct import pack, unpack, iter_unpack
+from struct import unpack, iter_unpack
 from subprocess import run
 import sqlite3
 import sys
+sys.path.append("../../")  # hack to use tools
+from tools.lib.fileops import (
+    pack_uint,
+    pack_ushort,
+    unpack_uint,
+    unpack_ushort,
+    write_foot,
+    write_text
+)
 
 
 def read_json_file(file: str):
@@ -26,24 +35,6 @@ def align_file(file_obj: object, alignment: int):
         if check_int:
             return True
         file_obj.write(b"\x00")
-
-
-def write_foot(file_obj: object):
-    foot = b"\x46\x4F\x4F\x54\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-    return file_obj.write(foot)
-
-
-def write_text(file_obj: object):
-    text = b"\x54\x45\x58\x54\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-    return file_obj.write(text)
-
-
-def int2le(value: int, fmt: str) -> bytes:
-    return pack(fmt, value)
-
-
-def le2int(value: bytes, fmt: str) -> int:
-    return unpack(fmt, value)[0]
 
 
 def determine_etp_version(file: str) -> int:
@@ -186,7 +177,7 @@ def recalculate_headers(file_obj: object):
     "Update header lengths and add FOOTs to end of file."
     # update TEXT sizing
     file_obj.seek(88)
-    indx_size = le2int(value=file_obj.read(4), fmt="<I")
+    indx_size = unpack_uint(file_obj.read(4))
     file_obj.read(4)  # read passed padding
     file_obj.read(indx_size)
     file_obj.read(16)  # read passed FOOT
@@ -195,7 +186,7 @@ def recalculate_headers(file_obj: object):
     text_end = file_obj.seek(0, 2)
     text_size = text_end - text_start
     file_obj.seek(text_start - 16 + 8)  # -16 to get to beginning of TEXT and +8 to jump to size. easier to read this way
-    file_obj.write(int2le(value=text_size, fmt="<I") + b"\x00\x00\x00\x00")
+    file_obj.write(pack_uint(text_size) + b"\x00\x00\x00\x00")
     file_obj.seek(0, 2)
     write_foot(file_obj=file_obj)
     # calculate new size for blja header
@@ -205,7 +196,7 @@ def recalculate_headers(file_obj: object):
     blja_end = file_obj.tell()
     blja_size = blja_end - blja_start
     file_obj.seek(72)
-    file_obj.write(int2le(value=blja_size, fmt="<I"))
+    file_obj.write(pack_uint(blja_size))
     file_obj.seek(0, 2)
     write_foot(file_obj=file_obj)
     # calculate new size for evtx header
@@ -215,7 +206,7 @@ def recalculate_headers(file_obj: object):
     evtx_end = file_obj.tell()
     evtx_size = evtx_end - evtx_start
     file_obj.seek(8)
-    file_obj.write(int2le(value=evtx_size, fmt="<I"))
+    file_obj.write(pack_uint(evtx_size))
     file_obj.seek(0, 2)
     write_foot(file_obj=file_obj)
 
@@ -225,7 +216,7 @@ def build_etp_0_2(json_list: list, src_etp: str):
     # grab original file header data we'll copy over to new file
     with open(src_etp, "rb") as f:
         orig_etp_data = f.read(96)
-        indx_size = le2int(value=orig_etp_data[88:92], fmt="<I")
+        indx_size = unpack_uint(orig_etp_data[88:92])
         indx_start = f.tell()
         orig_indx_table = f.read(indx_size)
         f.read(32)  # skip passed foot + text
@@ -246,7 +237,7 @@ def build_etp_0_2(json_list: list, src_etp: str):
             # of the file, grabbing its position and subtracting it with the initial text start.
             text_offset = etp_f.seek(0, 2) - text_start # seek to end of file to get offset
             etp_f.seek(indx_start + curr_indx_pos + 4) # jump passed string_id and get to text offset
-            etp_f.write(int2le(value=text_offset, fmt="<I")) # update the new offset
+            etp_f.write(pack_uint(text_offset)) # update the new offset
             etp_f.seek(0, 2) # position pointer back to end of file to write text
             string_bytes = get_string_bytes(json_list=json_list, search_key=str(string_id))
             if not string_bytes:
@@ -261,10 +252,10 @@ def build_etp_1(json_list: list, src_etp: str):
     "Builds an ETP file for file version 1."
     with open(src_etp, "rb") as f:
         orig_etp_data = f.read(96)
-        offset_count = le2int(value=orig_etp_data[44:48], fmt="<I")  # get from cmnh
-        indx_size = le2int(value=orig_etp_data[88:92], fmt="<I")
+        offset_count = unpack_uint(orig_etp_data[44:48])  # get from cmnh
+        indx_size = unpack_uint(orig_etp_data[88:92])
         orig_indx_table = f.read(indx_size)
-        offset_table_size = le2int(value=orig_indx_table[2:4], fmt="<H")
+        offset_table_size = unpack_ushort(orig_indx_table[2:4])
 
     etp_file = os.path.basename(src_etp)
     with open(f"new_etp/{etp_file}", "w+b") as etp_f:
@@ -287,7 +278,7 @@ def build_etp_1(json_list: list, src_etp: str):
 
         etp_f.seek(0, 2)
         while iterate < offset_table_size:
-            offset = le2int(value=orig_indx_table[orig_indx_pos:orig_indx_pos+2], fmt="<H")
+            offset = unpack_ushort(orig_indx_table[orig_indx_pos:orig_indx_pos+2])
             if offset == 0:
                 if not wrote_offset_divider:
                     etp_f.write(b"\x00\x00")
@@ -298,11 +289,11 @@ def build_etp_1(json_list: list, src_etp: str):
                 continue
 
             result = str_table[str(offset)]
-            # write in shorts until we encounter our first unsigned long
+            # write in shorts until we encounter our first uint
             if result["new_offset"] <= 65535 and not wrote_offset_divider:
-                new_offset = pack("<H", result["new_offset"])
+                new_offset = pack_ushort(result["new_offset"])
             else:
-                # hit our first unsigned long. split the table up
+                # hit our first uint. split the table up
                 if not wrote_offset_divider:
                     end_of_short_pos = etp_f.tell()
                     if etp_f.tell() % 4 != 0:
@@ -312,14 +303,14 @@ def build_etp_1(json_list: list, src_etp: str):
                     wrote_offset_divider = True
                 # hit an int that is too large to fit in a short. this table
                 # will have a 4 byte offset section in the indx table going forward.
-                new_offset = pack("<I", result["new_offset"])
+                new_offset = pack_uint(result["new_offset"])
             etp_f.write(new_offset)
 
             orig_indx_pos += 2
             iterate += 1
 
         # if we still have offsets in the original file left, we need to read them
-        # as longs instead of shorts.
+        # as uints instead of ushorts.
         if iterate != offset_count:
             # check if we need to skip over cdab bytes in original table
             if orig_indx_table[orig_indx_pos:orig_indx_pos+2] == b"\xCD\xAB":
@@ -327,7 +318,7 @@ def build_etp_1(json_list: list, src_etp: str):
 
             # iterate over remaining offsets in table
             while iterate != offset_count:
-                offset = le2int(value=orig_indx_table[orig_indx_pos:orig_indx_pos+4], fmt="<I")
+                offset = unpack_uint(orig_indx_table[orig_indx_pos:orig_indx_pos+4])
                 if offset == 0:
                     if not wrote_offset_divider:
                         etp_f.write(b"\x00\x00")
@@ -338,11 +329,11 @@ def build_etp_1(json_list: list, src_etp: str):
                     continue
 
                 result = str_table[str(offset)]
-                # write in shorts until we encounter our first unsigned long
+                # write in shorts until we encounter our first uint
                 if result["new_offset"] <= 65535 and not wrote_offset_divider:
-                    new_offset = pack("<H", result["new_offset"])
+                    new_offset = pack_ushort(result["new_offset"])
                 else:
-                    # hit our first unsigned long. split the table up
+                    # hit our first uint. split the table up
                     if not wrote_offset_divider:
                         end_of_short_pos = etp_f.tell()
                         if etp_f.tell() % 4 != 0:
@@ -351,7 +342,7 @@ def build_etp_1(json_list: list, src_etp: str):
                         wrote_offset_divider = True
                     # hit an int that is too large to fit in a short. this table
                     # will have a 4 byte offset section in the indx table going forward.
-                    new_offset = pack("<I", result["new_offset"])
+                    new_offset = pack_uint(result["new_offset"])
                 etp_f.write(new_offset)
                 orig_indx_pos += 4
                 iterate += 1
@@ -370,7 +361,7 @@ def build_etp_1(json_list: list, src_etp: str):
         # update the value of the short table. if there is a "cd ab" value,
         # don't include this in the calculation
         etp_f.seek(98)
-        etp_f.write(int2le(value=int((end_of_short_pos - 116) / 2), fmt="<I"))  # -116 to remove everything up to where offset starts
+        etp_f.write(pack_uint(int((end_of_short_pos - 116) / 2)))  # -116 to remove everything up to where offset starts
 
         # update the value of the entire INDX section up to the end of the short
         # table. if there is a "cd ab" value, DO include this in the calculation.
@@ -378,11 +369,11 @@ def build_etp_1(json_list: list, src_etp: str):
         short_len = end_of_short_pos - 96  # -96 to remove everything up until start of indx
         if wrote_cdab:
             short_len += 2
-        etp_f.write(int2le(value=short_len, fmt="<I"))
+        etp_f.write(pack_uint(short_len))
 
         new_indx_size = end_of_indx - 96
         etp_f.seek(88)
-        etp_f.write(int2le(value=new_indx_size, fmt="<I") + b"\x00\x00\x00\x00")
+        etp_f.write(pack_uint(new_indx_size) + b"\x00\x00\x00\x00")
         etp_f.seek(0, 2)
         write_foot(file_obj=etp_f)
         write_text(file_obj=etp_f)
@@ -415,8 +406,8 @@ def get_duplicate_offsets_4(src_etp: str):
         # iterate over string ids
         str_pos = string_table_start
         off_pos = offset_table_start
-        short = 2
-        long = 4
+        ushort = 2
+        uint = 4
         offset_dict = {}
         for i in range(0, string_table_size):
             f.seek(str_pos)
@@ -425,17 +416,17 @@ def get_duplicate_offsets_4(src_etp: str):
 
             if f.tell() < short_offset_end:
                 # if we encounter a table split in the offset table, skip over it
-                # and read as a long. otherwise, reset the file pointer.
+                # and read as a uint. otherwise, reset the file pointer.
                 if f.read(2) != b"\xCD\xAB":
                     f.seek(-2, 1)
-                    offset = unpack("<H", f.read(short))[0]
-                    off_pos += short
+                    offset = unpack("<H", f.read(ushort))[0]
+                    off_pos += ushort
                 else:
-                    offset = unpack("<I", f.read(long))[0]
-                    off_pos += long + 2  # add the "CD AB" bytes we ignored
+                    offset = unpack("<I", f.read(uint))[0]
+                    off_pos += uint + 2  # add the "CD AB" bytes we ignored
             else:
-                offset = unpack("<I", f.read(long))[0]
-                off_pos += long
+                offset = unpack("<I", f.read(uint))[0]
+                off_pos += uint
 
             # associate offset <-> str_id to find duplicates
             if offset_dict.get(offset):
@@ -495,13 +486,13 @@ def build_etp_4(json_list: list, src_etp: str):
             find_dupe = search_sublist(str_id_list=dupe_string_list, search_id=s_id[0])[0]
             result = str_text[str(find_dupe)]
 
-            # write in shorts until we encounter our first unsigned long
+            # write in shorts until we encounter our first uint
             if result["new_offset"] <= 65535 and not wrote_offset_divider:
-                new_offset = pack("<H", result["new_offset"])
+                new_offset = pack_ushort(result["new_offset"])
                 etp_f.write(new_offset)
                 strings_written += 1
             else:
-                # hit our first unsigned long. split the table up
+                # hit our first uint. split the table up
                 if not wrote_offset_divider:
                     if etp_f.tell() % 4 != 0:
                         etp_f.write(b"\xCD\xAB")
@@ -509,7 +500,7 @@ def build_etp_4(json_list: list, src_etp: str):
                     short_offset_end = etp_f.tell()
                 # hit an int that is too large to fit in a short. this table
                 # will have a 4 byte offset section in the indx table.
-                new_offset = pack("<I", result["new_offset"])
+                new_offset = pack_uint(result["new_offset"])
                 etp_f.write(new_offset)
                 strings_written += 1
 
@@ -527,16 +518,16 @@ def build_etp_4(json_list: list, src_etp: str):
         # update short offset table size
         short_offset_size = int((short_offset_end - short_offset_start) / 2)
         etp_f.seek(98)
-        etp_f.write(pack("<H", short_offset_size))
+        etp_f.write(pack_ushort(short_offset_size))
 
         # update string id + short offset table total size
         total_str_id_off_size = (short_offset_end - 96)  # chop off beginning file bytes up until string_ids start
         etp_f.seek(112)
-        etp_f.write(pack("<I", total_str_id_off_size))
+        etp_f.write(pack_uint(total_str_id_off_size))
 
         new_indx_size = end_of_indx - 96
         etp_f.seek(88)
-        etp_f.write(int2le(value=new_indx_size, fmt="<I") + b"\x00\x00\x00\x00")
+        etp_f.write(pack_uint(new_indx_size) + b"\x00\x00\x00\x00")
         etp_f.seek(0, 2)
         write_foot(file_obj=etp_f)
         write_text(file_obj=etp_f)

@@ -9,15 +9,13 @@ import glob
 import sys
 sys.path.append("../../")  # hack to use tools
 from tools.lib.idxfile import IdxFile
-
-
-DEFAULT_DQX_PATH = "C:\Program Files (x86)\SquareEnix\DRAGON QUEST X\Game\Content"
+from tools.globals import GAME_DATA_DIR
 
 
 def get_idx_files() -> list:
     # idx files are found in base Data and xpac Data folders
-    idx_files = glob.glob(f"{DEFAULT_DQX_PATH}\Data\*.idx")
-    idx_files = idx_files + (glob.glob(f"{DEFAULT_DQX_PATH}\*\Data\*.idx"))
+    idx_files = glob.glob(f"{GAME_DATA_DIR}/*.idx")
+    idx_files = idx_files + (glob.glob(f"{GAME_DATA_DIR}/../*/Data/*.idx"))
     return idx_files
 
 
