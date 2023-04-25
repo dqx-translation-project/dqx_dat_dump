@@ -80,8 +80,3 @@ if __name__ == "__main__":
         print(f"Found {len(results)} rows.")
         updated = update_db(records=results)
         print(f"Inserted/updated {updated} record(s).")
-
-    if args.u:
-        print("Updating rows with unknown dat/idx references.")
-        update_idx_dats()
-        print("Complete.")
