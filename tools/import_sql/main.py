@@ -42,15 +42,6 @@ def read_csv(file: str):
     return record_list
 
 
-def update_idx_dats():
-    rows = DB_CUR.execute(f'SELECT file_dir_hash FROM files WHERE dat IS NULL')
-    for row in rows.fetchall():
-        file = find_file(filename=row[0])
-        if file:
-            DB_CUR.execute(f'UPDATE files SET (idx, dat) = ("{file["idx"]}", "{file["dat"]}") WHERE file_dir_hash = "{row[0]}"')
-    DB_CONN.commit()
-
-
 def update_db(records: list):
     updated = 0
     for record in records:
@@ -82,7 +73,6 @@ def update_db(records: list):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Dedupe and insert/update CSV log entries into a SQLite database.")
     parser.add_argument("-c", help="Specify a blowfish_log.csv or hashlog.csv file to import into a SQLite database.")
-    parser.add_argument("-u", action=argparse.BooleanOptionalAction, help="Scans all records without a dat/idx reference and attempts to find them, writing them to the database.")
     args = parser.parse_args()
 
     if args.c:
