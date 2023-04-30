@@ -4,8 +4,8 @@ import io
 import struct
 import sys
 import frida
-from frida_agent import FridaAgent
-from managed_package_data_client import ManagedPackageDataClient
+from tools.dump_etps.dqxcrypt.frida_agent import FridaAgent
+from tools.dump_etps.dqxcrypt.managed_package_data_client import ManagedPackageDataClient
 
 
 CryFile = namedtuple('CryFile', ['magic', 'version', 'unknown', 'data'])
@@ -90,7 +90,7 @@ def attach_client() -> object:
     return agent
 
 
-def cli_logger(agent: object):
+def logger(agent: object):
     agent.init_logging()
     agent.install_hash_logger()
     agent.install_blowfish_logger()
@@ -98,7 +98,7 @@ def cli_logger(agent: object):
     sys.stdin.read()
 
 
-def cli_encrypt(agent: object, filepath: str, encryption_key: str):
+def encrypt(agent: object, filepath: str, encryption_key: str):
     is_raw = True
     if ".win32." in filepath:
         is_raw = False  # etp files with '.win32.' are CRY files. found in the RPS
@@ -112,7 +112,7 @@ def cli_encrypt(agent: object, filepath: str, encryption_key: str):
         f.write(data)
 
 
-def cli_decrypt(agent: object, filepath: str, encryption_key: str):
+def decrypt(agent: object, filepath: str, encryption_key: str):
     is_raw = True
     with open(filepath, "rb") as f:
         data = f.read(4)
@@ -126,7 +126,7 @@ def cli_decrypt(agent: object, filepath: str, encryption_key: str):
         f.write(decrypted_data)
 
 
-def cli_bruteforce(agent: object, filepath: str, managed_package_data_client_path: str):
+def bruteforce(agent: object, filepath: str, managed_package_data_client_path: str):
     print(f'Attempting decryption of {filepath} with keys from {managed_package_data_client_path}.')
     (key, data) = do_bruteforce_decrypt(agent, filepath, managed_package_data_client_path)
 
@@ -136,57 +136,7 @@ def cli_bruteforce(agent: object, filepath: str, managed_package_data_client_pat
         print(f'Decrypted with key "{key}". Writing to: {output_filepath}')
         with open(output_filepath, 'wb') as f:
             f.write(data)
+        return True
     else:
         print('Failed to decrypt file with the keys in ManagedPackageDataClient.win32.pkg')
-
-
-def print_help(parser: object):
-    parser.print_help()
-    sys.exit(0)
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="DQX [en|de]cryptor")
-    parser.add_argument(
-        "action", choices=["encrypt", "decrypt", "bruteforce", "logger"],
-        help="Specify an action."
-    )
-    parser.add_argument(
-        "--file", nargs="?", const="arg_not_given",
-        help="(opt) File to [en|de]crypt."
-    )
-    parser.add_argument(
-        "--encryption-key", nargs="?", const="arg_not_given",
-        help="(opt) Encryption key."
-    )
-    parser.add_argument(
-        "--mpdc", nargs="?", const="arg_not_given",
-        help="(opt) Path to the ManagedPackageDataClient file (for CRY files.)"
-    )
-
-    args = parser.parse_args()
-
-    if not args.action:
-        print_help(parser)
-
-    agent = attach_client()
-
-    if args.action == "encrypt":
-        if not args.file or not args.encryption_key:
-            print_help(parser)
-        cli_encrypt(agent=agent, filepath=args.file, encryption_key=args.encryption_key)
-
-    if args.action == "decrypt":
-        if not args.file or not args.encryption_key:
-            print_help(parser)
-        cli_decrypt(agent=agent, filepath=args.file, encryption_key=args.encryption_key)
-
-    if args.action == "bruteforce":
-        if not args.file or not args.mpdc:
-            print_help(parser)
-        cli_bruteforce(agent=agent, filepath=args.file, managed_package_data_client_path=args.mpdc)
-
-    if args.action == "logger":
-        cli_logger(agent=agent)
-
-    agent.detach_game()
+        return False

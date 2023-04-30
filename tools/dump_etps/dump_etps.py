@@ -3,14 +3,16 @@ import os
 from subprocess import run
 import sqlite3
 import sys
-import frida
 sys.path.append("../../")  # hack to use tools
 from tools.lib.datfile import DatEntry
 from tools.lib.extensions import EXTENSIONS
 from tools.lib.idxfile import IdxFile
 from tools.idx_searcher.main import get_idx_files
 from tools.globals import GAME_DATA_DIR
-
+from tools.dump_etps.dqxcrypt.dqxcrypt import (
+    attach_client,
+    decrypt
+)
 
 DB_PATH = "../import_sql/dat_db.db"
 DB_CONN = sqlite3.connect(DB_PATH)
@@ -113,16 +115,12 @@ def decrypt_file(file: str):
     DQX must be open for this to work.
     """
     enc_db_results = get_known_encrypted_files()
+    agent = attach_client()
     for result in enc_db_results:
         etp_file, key = result
-        
         if file.replace(".rawenc", "") == etp_file:
-            os.chdir("dqxcrypt")
-            run_decrypt = run(["../../../venv/Scripts/python.exe", "dqxcrypt.py", "decrypt_raw", f"../etps/{file}", key])
-            if run_decrypt.returncode != 0:
-                sys.exit()
-            os.chdir("..")
-            return True
+            decrypt(agent=agent, filepath=f"etps/{file}", encryption_key=key)
+    agent.detach_game()
     return False
 
 
