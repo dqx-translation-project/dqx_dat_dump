@@ -69,85 +69,64 @@ def update_db(file_hash: str, dir_hash: str, dat: str, idx: str):
     DB_CONN.commit()
 
 
-def read_hex_dict(path_to_csv: str):
-    csv_list = []
-    with open(path_to_csv, encoding="utf-8") as file:
-        reader = csv.DictReader(file)
-        for row in reader:
-            csv_list.append(row)
-    return csv_list
-
-
-def get_matching_clarity_name(csv_data: list, file: str):
+def get_blowfish_key(file: str):
     """
-    Searches all ETP files the way Clarity does,
-    which uses 64 bytes from the 80th byte position
-    to determine what the file is. Awful way to do it, I know.
+    Looks up a file to retrieve the 
     """
-    with open(file, "rb") as f:
-        f.seek(80)
-        indx_bytes = f.read(64).hex(" ").upper()
-    for row in csv_data:
-        if row["hex_string"] == indx_bytes:
-            return row["file"].split("\\")[-1].split(".")[0] + ".etp"  # ex: 'more_login_menus.etp'
+    DB_CUR.execute(f"SELECT blowfish_key FROM files WHERE file = \"{file}\" OR clarity_name = \"{file}\"")
+    results = DB_CUR.fetchone()
+    if results:
+        return results[0]
     return None
- 
-
-def update_db_with_clarity_name(file_hash: str, dir_hash: str, clarity_name: str):
-    DB_CUR.execute(f'UPDATE files SET clarity_name = "{clarity_name}" WHERE file_dir_hash = "{file_hash}{dir_hash}"')
-    DB_CONN.commit()
 
 
-def get_known_encrypted_files():
-    """
-    Pull all known blowfish keys from the database.
-    We are only able to decrypt/recrypt files that
-    have known keys.
-    """
-    DB_CUR.execute("SELECT file, blowfish_key FROM files WHERE blowfish_key IS NOT NULL")
-    results = DB_CUR.fetchall()
-    return results
-
-
-def decrypt_file(file: str):
+def decrypt_file(file: str, agent: object):
     """
     Run dqxcrypt to decrypt an ETP.
     DQX must be open for this to work.
     """
-    enc_db_results = get_known_encrypted_files()
-    agent = attach_client()
-    for result in enc_db_results:
-        etp_file, key = result
-        if file.replace(".rawenc", "") == etp_file:
-            decrypt(agent=agent, filepath=f"etps/{file}", encryption_key=key)
-    agent.detach_game()
+    no_rawenc = file.replace(".rawenc", "")  # db doesn't store file as ".rawenc"
+    blowfish_key = get_blowfish_key(no_rawenc)
+    if blowfish_key:
+        decrypt(agent=agent, filepath=f"etps/{file}", encryption_key=blowfish_key)
+        return True
     return False
 
 
 def main():
+    agent = attach_client()
     etps = find_etps()
     for etp in etps:
-        file_data = get_file_data(dat_filename=etp["dat"], offset=etp["dat_offset"])
+
+        _dat = etp["dat"]
+        _offset = etp["dat_offset"]
+        _file = etp["file"]
+        _dir = etp["dir"]
+        _idx = etp["idx"]
+
+        file_data = get_file_data(dat_filename=_dat, offset=_offset)
         if file_data:
             ext = file_data[0:7]
-            name = get_filename(etp["file"])
+            name = get_filename(_file)
             if name:
                 filename = name
             else:
                 # we don't know this file. start tracking it in the db
-                update_db(file_hash=etp["file"], dir_hash=etp["dir"], dat=etp["dat"], idx=etp["idx"])
+                update_db(file_hash=_file, dir_hash=_dir, dat=_dat, idx=_idx)
                 if ext in EXTENSIONS:
-                    filename = etp["file"] + EXTENSIONS[ext]
+                    filename = _file + EXTENSIONS[ext]
                 else:
-                    filename = etp["file"] + ".rawenc"  # if we don't know extension in this dir, it's highly likely encrypted
+                    filename = _file + ".rawenc"  # if we don't know extension in this dir, it's highly likely encrypted
             write_etp(filename=filename, data=file_data)
 
             # attempt to decrypt file from known blowfish key.
             # if successful, rename it to etp.
-            if decrypt_file(file=filename):
+            if decrypt_file(file=filename, agent=agent):
                 filename = filename.split(".etp")[0] + ".etp"
                 os.remove(f"etps/{filename}.rawenc")
                 os.replace(src=f"etps/{filename}.rawenc.dec", dst=f"etps/{filename}", )
+
+    agent.detach_game()
 
 
 if __name__ == "__main__":
