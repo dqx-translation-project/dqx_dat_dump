@@ -11,7 +11,8 @@ class FridaAgent():
         self.blowfish_log_file = None
 
     def _get_agent_script(self):
-        with open('./dqxcrypt/dqx-blowfish-frida-agent/_agent.js', 'rt', encoding='utf-8') as f:
+        abs_path = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+        with open(f'{abs_path}/dqx-blowfish-frida-agent/_agent.js', 'rt', encoding='utf-8') as f:
             return f.read()
 
     def attach_game(self):
