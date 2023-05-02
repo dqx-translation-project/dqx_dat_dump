@@ -8,7 +8,10 @@ from tools.lib.datfile import DatEntry
 from tools.lib.idxfile import IdxFile
 from tools.lib.rpsfile import RpsFile
 from tools.globals import GAME_DATA_DIR
-
+from tools.dump_etps.dqxcrypt.dqxcrypt import (
+    attach_client,
+    bruteforce
+)
 
 DB_PATH = "../import_sql/dat_db.db"
 DB_CONN = sqlite3.connect(DB_PATH)
@@ -50,14 +53,18 @@ def decrypt_cry_files():
     Run dqxcrypt to decrypt encrypted CRY files.
     DQX must be open for this to work.
     """
+    agent = attach_client()
     files = glob.glob("rps/packageManagerRegistIncludeAutoClient_rps/*.etp.cry")
     for file in files:
-        os.chdir("dqxcrypt")
-        run(["../../../venv/Scripts/python.exe", "dqxcrypt.py", "bruteforce", f"../{file}", "../rps/packageManagerRegistIncludeAutoClient_rps/ManagedPackageDataClient.win32.pkg"])
-        os.chdir("..")
+        bruteforce(
+            agent=agent,
+            filepath=file,
+            managed_package_data_client_path="rps/packageManagerRegistIncludeAutoClient_rps/ManagedPackageDataClient.win32.pkg"
+        )
         new_name = file.split(".cry")[0]
         os.replace(src=f"{file}.dec", dst=new_name)
         os.remove(file)
+    agent.detach_game()
 
 
 if __name__ == "__main__":
