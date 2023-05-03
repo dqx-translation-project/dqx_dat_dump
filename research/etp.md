@@ -103,7 +103,7 @@ Entries are read as unsigned shorts initially. If there are more entries than al
                                         for 4 byte alignment, these bytes are included.
 ```
 
-From here, read the offsets initially as ushorts to look up in the TEXT table. If you reach the end of the ushort table and there are still offsets remaining, read them as uints until the end of the table.
+From here, read the offsets initially as ushorts to look up in the TEXT table. ((offset * 2) + 1) will map you to the correct location. If you reach the end of the ushort table and there are still offsets remaining, read them as uints until the end of the table.
 
 #### v4
 
@@ -122,7 +122,7 @@ Otherwise, the same rules apply as the v1 files.
                                         for 4 byte alignment, these bytes are included.
 ```
 
-From here, you need to jump between the string table and the offset table sequentially. Read the first record in the string table with the first record in the offset table. There are currently no string tables that transitioned from ushorts to uints, but there are a few offset tables that do transition to needing to be read as uints.
+From here, you need to jump between the string table and the offset table sequentially. Read the first record in the string table with the first record in the offset table. There are currently no string tables that transitioned from ushorts to uints, but there are a few offset tables that do transition to needing to be read as uints. ((offset * 2) + 1) will map you to the correct location in TEXT.
 
 
 Each section in all file versions are concluded with a "FOOT" to close the INDX section, length of foot and padded for alignment to 16 total bytes.
