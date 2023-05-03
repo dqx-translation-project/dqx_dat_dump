@@ -484,6 +484,7 @@ def build_etp_4(json_list: list, src_etp: str):
         strings_written = 0
         short_offset_start = etp_f.tell()
         short_offset_end = 0
+        wrote_cdab = False
         for s_id in iter_unpack("<H", string_table):
             find_dupe = search_sublist(str_id_list=dupe_string_list, search_id=s_id[0])[0]
             result = str_text[str(find_dupe)]
@@ -496,10 +497,11 @@ def build_etp_4(json_list: list, src_etp: str):
             else:
                 # hit our first uint. split the table up
                 if not wrote_offset_divider:
+                    short_offset_end = etp_f.tell()
                     if etp_f.tell() % 4 != 0:
                         etp_f.write(b"\xCD\xAB")
+                        wrote_cdab = True
                     wrote_offset_divider = True
-                    short_offset_end = etp_f.tell()
                 # hit an int that is too large to fit in a short. this table
                 # will have a 4 byte offset section in the indx table.
                 new_offset = pack_uint(result["new_offset"])
@@ -523,6 +525,9 @@ def build_etp_4(json_list: list, src_etp: str):
         etp_f.write(pack_ushort(short_offset_size))
 
         # update string id + short offset table total size
+        # the cdab bytes must be included in the total size
+        if wrote_offset_divider and wrote_cdab:
+            short_offset_end += 2
         total_str_id_off_size = (short_offset_end - 96)  # chop off beginning file bytes up until string_ids start
         etp_f.seek(112)
         etp_f.write(pack_uint(total_str_id_off_size))
