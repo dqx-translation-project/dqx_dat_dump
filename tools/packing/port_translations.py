@@ -36,21 +36,6 @@ def get_latest_translation_files():
     return translated_data
 
 
-def get_clarity_name(name: str):
-    """
-    Tries to return the real clarity name if we have a name for it.
-
-    This function will get deprecated when we change all of the filenames.
-    """
-    result = DB_CONN.execute(f"SELECT file, clarity_name FROM files WHERE clarity_name = \"{name}\" OR file = \"{name}\"")
-    result = result.fetchone()
-    if not result:
-        return name
-    if result[1]:
-        return result[1]
-    return name
-
-
 def read_json_file(file):
     """Reads JSON file and returns content."""
     try:
@@ -66,16 +51,10 @@ def search_string(json_dict: dict, text: str):
     result is found, return the English result. If no English result
     exists, return None.
     """
-    # need to make sure we can find the old string in weblate.
-    # clarity creates these pipes in its current implementation.
-    text = text.replace("\n", "|")
     values = iter(json_dict.values())
     for value in values:
         result = value.get(text, None)
         if result:
-            # clarity uses pipes to denote a newline.
-            # this can be removed when clarity has been fully decoupled.
-            result = result.replace("|", "\n")
             return result
     return None
 
@@ -93,9 +72,7 @@ def migrate_jsons():
 
     for new_file in jsons:
         basename = os.path.basename(new_file)
-        file_to_search = basename.replace(".json", ".etp")
-        clarity_name = get_clarity_name(file_to_search).replace(".etp", ".json")
-        old_data = json_data.get(clarity_name, None)
+        old_data = json_data.get(basename, None)
         if old_data:
             new_data = read_json_file(new_file)
             if not new_data:
