@@ -73,7 +73,7 @@ def update_db(records: list):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Dedupe and insert/update CSV log entries into a SQLite database.")
     parser.add_argument("-c", help="Specify a blowfish_log.csv or hashlog.csv file to import into a SQLite database.")
-    args = parser.parse_args()
+    args = parser.parse_args(args=None if sys.argv[1:] else ["--help"])
 
     if args.c:
         results = read_csv(file=args.c)
