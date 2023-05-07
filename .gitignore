@@ -8,4 +8,5 @@ tools/packing/json
 tools/packing/new_etp
 tools/packing/new_json
 tools/packing/new_rps
+logs/
 log.txt
