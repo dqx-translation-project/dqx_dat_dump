@@ -1,5 +1,12 @@
 __pycache__
-extract_cry.py
-out/*
 .vscode
 venv
+tools/dump_dat/out
+tools/dump_etps/etps
+tools/dump_etps/rps
+tools/packing/json
+tools/packing/new_etp
+tools/packing/new_json
+tools/packing/new_rps
+logs/
+log.txt
