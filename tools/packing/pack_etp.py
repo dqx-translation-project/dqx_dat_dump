@@ -15,6 +15,10 @@ from tools.lib.fileops import (
     write_foot,
     write_text
 )
+from tools.dump_etps.dqxcrypt.dqxcrypt import (
+    attach_client,
+    encrypt
+)
 
 
 def read_json_file(file: str):
@@ -578,16 +582,10 @@ def recrypt_file(file: str):
     result = encrypted_file.fetchone()
     if result:
         if os.path.exists(f"new_etp/{file}"):
-            # files with ".win32." in their name are from the RPS and should be re-encrypted as CRY files.
-            # otherwise, call the raw encryption function.
-            if ".win32." in file:
-                encrypt_type = "encrypt"
-            else:
-                encrypt_type = "encrypt_raw"
-            os.chdir("../dump_etps/dqxcrypt")
-            run(["../../../venv/Scripts/python.exe", "dqxcrypt.py", encrypt_type, f"../../packing/new_etp/{file}", result[1]])
-            os.chdir("../../packing")
+            agent = attach_client()
+            encrypt(agent=agent, filepath=f"new_etp/{file}", encryption_key=result[1])
             os.replace(src=f"new_etp/{file}.enc", dst=f"new_etp/{file}")
+            agent.detach_game()
     else:
         print(f"{file} was either not originally encrypted or there isn't a stored blowfish key for it in the database.")
 
@@ -604,11 +602,11 @@ def recrypt_files():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Read a JSON file dumped by this program and rebuild into an ETP file.")
-    parser.add_argument("-e", "--etp-file", nargs="?", type=str, help="Path to ETP file.")
-    parser.add_argument("-j", "--json-file", nargs="?", type=str, help="Path to translated JSON file.")
+    parser.add_argument("-e", "--etp-file", type=str, help="Path to ETP file.")
+    parser.add_argument("-j", "--json-file", type=str, help="Path to translated JSON file.")
     parser.add_argument("-a", "--pack-all", default=False, action="store_true", help="Pack all JSON files dumped by this program into ETP. Before using this flag, ensure you haven't changed any names.")
-    parser.add_argument("-r", "--recrypt", default=False, action="store_true", help="Recrypt files. DQX must be open if you pass this. This only works when used with (-e and -j) or (-a).")
-    args = parser.parse_args()
+    parser.add_argument("-r", "--recrypt", default=False, action="store_true", help="Recrypt files. DQX must be open. This only works when used with (-e and -j) or (-a).")
+    args = parser.parse_args(args=None if sys.argv[1:] else ["--help"])
 
     os.makedirs("new_etp", exist_ok=True)
 
@@ -617,9 +615,9 @@ if __name__ == "__main__":
         if args.recrypt:
             recrypt_files()
     else:
-        # TO DO: specifying nothing doesn't hit this for some reason.
-        if not args.etp_file and args.json_file:
-            sys.exit("Must specify both \"--etp-file\" and \"--json-file\" if not dumping with \"--pack-all\".")
+        if not (args.etp_file and args.json_file):
+            parser.print_help()
+            sys.exit(1)
         build_etp(json_file=args.json_file, src_etp=args.etp_file)
         if args.recrypt:
             file = os.path.basename(args.etp_file)
