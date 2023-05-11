@@ -1,6 +1,6 @@
+import argparse
 import glob
 import os
-from subprocess import run, PIPE
 import sqlite3
 import sys
 sys.path.append("../../")  # hack to use tools
@@ -53,6 +53,8 @@ def decrypt_cry_files():
     Run dqxcrypt to decrypt encrypted CRY files.
     DQX must be open for this to work.
     """
+    if not os.path.exists("rps"):
+        sys.exit("Dump the RPS first and then attempt to decrypt.")
     agent = attach_client()
     files = glob.glob("rps/packageManagerRegistIncludeAutoClient_rps/*.etp.cry")
     for file in files:
@@ -68,6 +70,15 @@ def decrypt_cry_files():
 
 
 if __name__ == "__main__":
-    dump_rps_etp()
-    extract_rps()
-    decrypt_cry_files()
+    parser = argparse.ArgumentParser(description="Unpack and unencrypts a specific RPS file that contains game ETP files.")
+    parser.add_argument("-u", default=False, action="store_true", help="Unpack and extract the RPS.")
+    parser.add_argument("-d", default=False, action="store_true", help="Decrypts all CRY files in the RPS. Note that this is usually not necessary to perform as the files in this RPS are also found in the \"etps\" folder.")
+    args = parser.parse_args(args=None if sys.argv[1:] else ["--help"])
+
+    if args.u and args.d:
+        sys.exit("Please specify either one argument or the other; not both.")
+    if args.u:
+        dump_rps_etp()
+        extract_rps()
+    elif args.d:
+        decrypt_cry_files()

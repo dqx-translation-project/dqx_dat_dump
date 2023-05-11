@@ -1,6 +1,6 @@
-import csv
+import argparse
+import glob
 import os
-from subprocess import run
 import sqlite3
 import sys
 sys.path.append("../../")  # hack to use tools
@@ -93,8 +93,7 @@ def decrypt_file(file: str, agent: object):
     return False
 
 
-def main():
-    agent = attach_client()
+def dump_all_etps():
     etps = find_etps()
     for etp in etps:
 
@@ -117,17 +116,36 @@ def main():
                     filename = _file + EXTENSIONS[ext]
                 else:
                     filename = _file + ".rawenc"  # if we don't know extension in this dir, it's highly likely encrypted
+            print(f"Writing {filename}")
             write_etp(filename=filename, data=file_data)
 
-            # attempt to decrypt file from known blowfish key.
-            # if successful, rename it to etp.
-            if decrypt_file(file=filename, agent=agent):
-                filename = filename.split(".etp")[0] + ".etp"
-                os.remove(f"etps/{filename}.rawenc")
-                os.replace(src=f"etps/{filename}.rawenc.dec", dst=f"etps/{filename}", )
 
+def decrypt_etps():
+    """
+    Decrypt all rawenc files in the "etps" folder.
+    """
+    if not os.path.exists("etps"):
+        sys.exit("Dump the ETPs first and then attempt to decrypt.")
+    agent = attach_client()
+    etps = glob.glob("etps/*.rawenc")
+    for etp in etps:
+        basename = os.path.basename(etp)
+        if decrypt_file(file=basename, agent=agent):
+            no_rawenc = basename.replace(".rawenc", "")
+            os.replace(src=f"etps/{basename}.dec", dst=f"etps/{no_rawenc}")
+            os.remove(etp)
     agent.detach_game()
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Dumps and unencrypts ETPs.")
+    parser.add_argument("-u", default=False, action="store_true", help="Unpack ETPs from the data00000000 DAT.")
+    parser.add_argument("-d", default=False, action="store_true", help="Decrypts ETPs ending in \".rawenc\" in the etps folder.")
+    args = parser.parse_args(args=None if sys.argv[1:] else ["--help"])
+
+    if args.u and args.d:
+        sys.exit("Please specify either one argument or the other; not both.")
+    if args.u:
+        dump_all_etps()
+    elif args.d:
+        decrypt_etps()
