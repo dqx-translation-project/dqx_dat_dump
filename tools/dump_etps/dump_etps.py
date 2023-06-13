@@ -64,7 +64,7 @@ def update_db(file_hash: str, dir_hash: str, dat: str, idx: str):
     query = DB_CUR.execute(f'SELECT file_dir_hash FROM files WHERE file_dir_hash = "{file_hash}{dir_hash}"')
     if not query.fetchone():
         # new file, get it into the db
-        DB_CUR.execute(f'INSERT INTO files(file_hash, dir_hash, dat, idx) VALUES("{file_hash}","{dir_hash}", "{dat}", "{idx}")')
+        DB_CUR.execute(f'INSERT INTO files(file_hash, dir_hash, file_dir_hash) VALUES("{file_hash}","{dir_hash}", "{file_hash}{dir_hash}")')
         print(f"New file {file_hash} added to db.")
     DB_CONN.commit()
 
