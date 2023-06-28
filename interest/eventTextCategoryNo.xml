@@ -829,5 +829,14 @@
   <Category No="24389" Name="CsSq60811" />
   <Category No="24395" Name="LiveDpsChallengeNpc" />
   <Category No="24408" Name="LiveSiblingEditCostumeMake" />
+  <Category No="24409" Name="CsMq60931" />
+  <Category No="24412" Name="CsMq60951" />
   <Category No="24427" Name="LiveHousePortalItem" />
+  <Category No="24436" Name="CsMe6" />
+  <Category No="24437" Name="CsMq60941" />
+  <Category No="24442" Name="LiveHousingMyset" />
+  <Category No="24445" Name="CsSq60831" />
+  <Category No="24469" Name="LiveTenkaiWeeklyMissionNpc" />
+  <Category No="24483" Name="CsSq60841" />
+  <Category No="24484" Name="CsSq60842" />
 </EventText>
