@@ -7,7 +7,7 @@ from tools.lib.idxfile import IdxFile
 from tools.lib.rpsfile import RpsFile
 
 # example: C:\Program Files (x86)\SquareEnix\DRAGON QUEST X\Game\Content\Data\data00000000.win32.idx
-idx_file = "C:\\Program Files (x86)\\SquareEnix\\DRAGON QUEST X\\Game\\Content\\Data\\data00010000.win32.idx"
+idx_file = "C:\\Program Files (x86)\\SquareEnix\\DRAGON QUEST X\\Game\\Content\\Data\\data00000000.win32.idx"
 
 def unpack_idx():
     idx = IdxFile(idx_file)
@@ -15,7 +15,7 @@ def unpack_idx():
     print(f"{num_files} rows found.")
 
     for record in idx.records["records"]:
-        dat_offset = record["offset"]
+        dat_offset = record["dat_offset"]
         fq_dat_file = os.path.splitext(idx_file)[0] + ".dat" + record["dat_num"]
         dat_file_name = fq_dat_file.split("\\")[-1]
         filename = record["filename"]
