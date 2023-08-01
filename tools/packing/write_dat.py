@@ -171,13 +171,40 @@ def generate_dat_entry(uncomp_len: int, file_chunk_list: list):
     return block_table
 
 
-def write_to_dat(idx_file: str, idx_offset: int, file: str):
+def create_new_dat(idx_file: str, dat_num: str):
+    """
+    Create a new dat ("dat1") to store the ETPs.
+
+    :param idx_file: Filename of the idx file.
+    :param dat_num: Number of the new dat to write.
+    """
+    orig_dat_name = idx_file.replace(".idx", f".dat0")
+    new_dat_name = idx_file.replace(".idx", f".dat{dat_num}")
+
+    with open(orig_dat_name, "rb") as f:
+        dat_header = f.read(2048)
+
+    with open(new_dat_name, "w+b") as f:
+        f.write(dat_header)
+
+
+def update_idx_dat_count(num_dats: int):
+    """
+    Opens the data00000000.win32.idx file and updates the number of dats to read.
+    """
+    with open(f"{GAME_DATA_DIR}/data00000000.win32.idx", "r+b") as f:
+        f.seek(1104)
+        f.write(pack_uint(num_dats))
+
+
+def write_to_dat(idx_file: str, idx_offset: int, file: str, dat_num: str):
     """
     Writes a new file to a dat and overwrites the idx entry to point to the new dat offset.
 
     :param idx_file: Filename of the idx file.
     :param idx_offset: Offset of the record in the idx file that points to the file you're overwriting.
     :param file: File you want to write to the dat.
+    :param dat_num: Number of the new dat to write.
     """
     # split the file into chunks and generate our dat entry
     chunked_data = generate_chunk_list(file)
@@ -190,7 +217,7 @@ def write_to_dat(idx_file: str, idx_offset: int, file: str):
         idx_f.seek(idx_offset + 8)
 
         # TODO: need to come back here and support writing to other dat files at a later time
-        dat_file = idx_file.replace(".idx", ".dat0")
+        dat_file = idx_file.replace(".idx", f".dat{dat_num}")
         path_to_dat = "/".join([GAME_DATA_DIR, dat_file])
 
         with open(path_to_dat, "r+b") as dat_f:
@@ -203,7 +230,7 @@ def write_to_dat(idx_file: str, idx_offset: int, file: str):
                 dat_f.write(padding)
 
             # gather new offset to tell the idx file where this entry will live
-            new_dat_offset = calculate_new_offset(offset=dat_f.tell(), dat_num=0)
+            new_dat_offset = calculate_new_offset(offset=dat_f.tell(), dat_num=int(dat_num))
 
             # write new file entry at end of dat
             dat_f.write(dat_data_to_write)
@@ -218,6 +245,14 @@ def write_etps():
     etp_files = glob.glob("new_etp/*.etp")
     rps_files = glob.glob("new_rps/*.rps")
     files_to_pack = etp_files + rps_files
+
+    create_new_dat(
+        idx_file=f"{GAME_DATA_DIR}/data00000000.win32.idx",
+        dat_num="1"
+    )
+
+    update_idx_dat_count(num_dats=2)
+
     for file in files_to_pack:
         basename = os.path.basename(file)
         db_result = get_record(etp_file=basename)
@@ -233,8 +268,8 @@ def write_etps():
         write_to_dat(
             idx_file=idx_loc["idx"],
             idx_offset=idx_loc["idx_offset"],
-            file=file
+            file=file,
+            dat_num="1"
         )
-
 
 write_etps()
