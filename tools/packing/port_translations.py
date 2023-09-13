@@ -99,7 +99,7 @@ def migrate_jsons():
         else:
             print(f"Did not find an existing json file, so migration will not happen. Moving {basename} as-is.")
             copy(src=new_file, dst=f"new_json/en/{basename}")
-            copy(src=new_file, dst=f"new_json/ja/{basename}")
+            copy(src=new_file.replace("json/en", "json/ja"), dst=f"new_json/ja/{basename}")
 
 
 # TO DO: cli menu to individually port? for now, `python port_translations.py` just runs through all of this
