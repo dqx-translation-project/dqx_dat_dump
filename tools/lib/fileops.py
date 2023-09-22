@@ -1,5 +1,6 @@
+import functools
+import itertools
 from struct import unpack, pack
-
 
 
 def unpack_ushort(buf: bytes) -> int:
@@ -29,10 +30,12 @@ def write_text(file_obj: object):
 
 
 def read_cstr(f: object) -> str:
-    buf = bytearray()
-    while True:
-        char = f.read(1)
-        if char != b"\x00":
-            buf.extend(char)
-        else:
-            return buf.decode(encoding="utf-8")
+    """
+    Reads a null-terminated C string from the current file pointer.
+    # https://stackoverflow.com/a/32775270
+
+    :param f: File handle.
+    :returns: Decoded string.
+    """
+    toeof = iter(functools.partial(f.read, 1), '')
+    return ''.join(itertools.takewhile('\0'.__ne__, toeof))
