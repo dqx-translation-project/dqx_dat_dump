@@ -9,7 +9,7 @@ import glob
 import sys
 sys.path.append("../../")  # hack to use tools
 from tools.lib.idxfile import IdxFile
-from tools.globals import GAME_DATA_DIR
+from tools.py_globals import GAME_DATA_DIR
 
 
 def get_idx_files() -> list:
@@ -24,7 +24,7 @@ def find_file(filename: str):
     idx_list = get_idx_files()
     for idx in idx_list:
         file = IdxFile(idx)
-        for record in file.records["records"]:
+        for record in file.records:
             if filename.lower() == record["filename"]:
                 idx_file = idx.split("\\")[-1]
                 dat_file = idx_file.replace(".win32.idx", f".win32.dat{record['dat_num']}")

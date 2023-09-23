@@ -1,6 +1,7 @@
 import functools
 import itertools
 from struct import unpack, pack
+from pathlib import Path
 
 
 def unpack_ushort(buf: bytes) -> int:

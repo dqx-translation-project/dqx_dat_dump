@@ -2,8 +2,11 @@ from binascii import hexlify
 from struct import unpack, pack
 import sys
 import pathlib
-from fileops import pack_uint
 import sqlite3
+import shutil
+sys.path.append("../../")  # hack to use tools
+from tools.py_globals import ORIG_NUM_DATS, PROJECT_ROOT, GAME_DATA_DIR
+from tools.lib.fileops import pack_uint
 
 
 FILE_TYPES = {
@@ -15,9 +18,15 @@ FILE_TYPES = {
 
 class IdxFile:
     def __init__(self, file: str):
+        """
+        :param file: Absolute path to the IDX file.
+        """
         self.file = file
-
         self.__is_idx(file=self.file)
+
+        self.db_path = "../../dat_db.db"
+        self.db_conn = sqlite3.connect(self.db_path)
+        self.db_cur = self.db_conn.cursor()
 
         # idx files are pretty small (less than 4MB), so read all in
         with open(file, "rb") as f:
@@ -89,12 +98,9 @@ class IdxFile:
 
 
     def __db_lookup(self, hashed_filename: str):
-        db_path = "../../dat_db.db"
-        db_conn = sqlite3.connect(db_path)
-        db_cur = db_conn.cursor()
-        db_result = db_cur.execute(f"SELECT file, directory FROM files WHERE file_dir_hash = '{hashed_filename}'")
+        db_result = self.db_cur.execute(f"SELECT file, directory FROM files WHERE file_dir_hash = '{hashed_filename}'")
         found = db_result.fetchone()
-        db_conn.close()
+
         return found or ("", "")
 
 
@@ -104,11 +110,6 @@ class IdxFile:
         position = 0
         records = []
         num_records = len(rows) / 16
-
-        record_dict = {
-            "count": int(num_records),
-            "records": records
-        }
 
         while count < num_records:
             data = unpack("<I I I 4x", rows[position:position+16])
@@ -136,7 +137,25 @@ class IdxFile:
             count += 1
             position += 16
 
-        return record_dict
+        return records
+
+
+    def __update_num_dats(self):
+        """
+        Update the IDX file to increment the number of dats. This is necessary
+        to tell the game to load a newly created dat. This does not overwrite
+        the existing IDX file, but copies the changes into the project root.
+        """
+        filename = pathlib.Path(self.file).name
+        new_dat_count = ORIG_NUM_DATS[filename] + 1  # we increment here as dat0 is \x01
+        new_file = "/".join([PROJECT_ROOT, filename])
+
+        if not pathlib.Path(new_file).is_dir():
+            shutil.copy(self.file, new_file)
+
+        with open(new_file, "r+b") as f:
+            f.seek(1104)
+            f.write(pack_uint(new_dat_count))
 
 
     def get_record_by_filename(self, filename: str):
@@ -145,7 +164,7 @@ class IdxFile:
         As the database is incomplete, this will likely be missing data.
         Searching by hashed_filename will provide a more complete search.
         """
-        for record in self.records["records"]:
+        for record in self.records:
             if record["filename"] == filename:
                 return record
         return None
@@ -155,7 +174,7 @@ class IdxFile:
         """
         Gets a record by its hashed filename.
         """
-        for record in self.records["records"]:
+        for record in self.records:
             if record["hashed_filename"] == hashed_filename:
                 return record
 
@@ -165,7 +184,7 @@ class IdxFile:
         Get all records that match the search string.
         """
         matches = []
-        for record in self.records["records"]:
+        for record in self.records:
             if record["filename"]:
                 if str_lookup in record["filename"]:
                     matches.append(record)
@@ -177,7 +196,7 @@ class IdxFile:
         Get all records inside of a hashed folder name.
         """
         matches = []
-        for record in self.records["records"]:
+        for record in self.records:
             if folder_hash == record["folder_hash"]:
                 matches.append(record)
         return matches
@@ -190,7 +209,33 @@ class IdxFile:
         Searching by folder_hash will provide a more complete search.
         """
         matches = []
-        for record in self.records["records"]:
+        for record in self.records:
             if folder == record["folder"]:
                 matches.append(record)
         return matches
+
+
+    def create_custom_dat(self):
+        """
+        Creates a new dat file by incrementing the total number of current dats.
+        Unsure of a reliable way to calculate the next dat as there could be custom
+        dats in the directory already, so the original number of dats is hardcoded.
+        Since a dat file is associated with an IDX file, the creation of the dat is
+        found in this class.
+        """
+        idx_basename = pathlib.Path(self.file).name
+
+        # all dats have a dat0 and we use this as the base when creating a new one
+        orig_dat0 = "/".join([GAME_DATA_DIR, pathlib.Path(idx_basename).stem + ".dat0"])
+        next_dat = pathlib.Path(idx_basename).stem + ".dat" + str(ORIG_NUM_DATS[idx_basename])
+        new_file = "/".join([PROJECT_ROOT, next_dat])
+
+        if not pathlib.Path(new_file).is_file():
+            with open(orig_dat0, "rb") as f:
+                dat_header = f.read(2048)
+            with open(new_file, "w+b") as f:
+                f.write(dat_header)
+
+        self.__update_num_dats()
+
+        return new_file
