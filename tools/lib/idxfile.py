@@ -139,9 +139,11 @@ class IdxFile:
         return record_dict
 
 
-    def get_record(self, filename: str):
+    def get_record_by_filename(self, filename: str):
         """
         Gets a record by its actual filename.
+        As the database is incomplete, this will likely be missing data.
+        Searching by hashed_filename will provide a more complete search.
         """
         for record in self.records["records"]:
             if record["filename"] == filename:
@@ -156,3 +158,39 @@ class IdxFile:
         for record in self.records["records"]:
             if record["hashed_filename"] == hashed_filename:
                 return record
+
+
+    def get_matching_filenames(self, str_lookup: str):
+        """
+        Get all records that match the search string.
+        """
+        matches = []
+        for record in self.records["records"]:
+            if record["filename"]:
+                if str_lookup in record["filename"]:
+                    matches.append(record)
+        return matches
+
+
+    def get_records_from_folder_hash(self, folder_hash: str):
+        """
+        Get all records inside of a hashed folder name.
+        """
+        matches = []
+        for record in self.records["records"]:
+            if folder_hash == record["folder_hash"]:
+                matches.append(record)
+        return matches
+
+
+    def get_records_from_folder_path(self, folder: str):
+        """
+        Get all records inside of a folder path.
+        As the database is incomplete, this will likely be missing data.
+        Searching by folder_hash will provide a more complete search.
+        """
+        matches = []
+        for record in self.records["records"]:
+            if folder == record["folder"]:
+                matches.append(record)
+        return matches
