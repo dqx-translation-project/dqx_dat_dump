@@ -158,7 +158,7 @@ def unpack_etp_4(file: str):
 
         string_table = indx_table[20:20+str_table_size]
         offset_table = bytearray(indx_table[20+str_table_size:])
-        
+
         # if offset table starts with "CD AB", this was part of the string table
         # that isn't included in the size. get rid of it
         if offset_table[0:2] == b"\xCD\xAB":
