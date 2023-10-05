@@ -146,6 +146,7 @@ def unpack_etp_4(file: str):
         indx_table = f.read(indx_size)  # read in entire indx table
         f.seek(-indx_size, 1)  # go backwards
         str_table_size = unpack("<H", f.read(2))[0] * 2
+        offset_table_size = unpack("<H", f.read(2))[0] * 2
 
         if str_table_size == 0:
             print(f"String table length is 0 for {file}. I'm ignoring this file because it's abnormal.")
@@ -157,7 +158,7 @@ def unpack_etp_4(file: str):
 
         string_table = indx_table[20:20+str_table_size]
         offset_table = bytearray(indx_table[20+str_table_size:])
-
+        
         # if offset table starts with "CD AB", this was part of the string table
         # that isn't included in the size. get rid of it
         if offset_table[0:2] == b"\xCD\xAB":
@@ -166,9 +167,16 @@ def unpack_etp_4(file: str):
         offset_tables = [o for o in offset_table.split(b"\xCD\xAB") if o]
         short_offset_table = bytearray(offset_tables[0])
         long_offset_table = bytearray()
+
+        # if we split on \xCD\xAB, there's more than one item in the list.
         if len(offset_tables) > 1:
             if len(offset_tables[1]) > 14:
                 long_offset_table = bytearray(offset_tables[1])
+        # if there wasn't a \xCD\xAB split, but there are long offsets
+        # present, we need to split them up so we can read them correctly.
+        elif len(short_offset_table) > offset_table_size:
+            short_offset_table = bytearray(offset_tables[0][:offset_table_size])
+            long_offset_table = bytearray(offset_tables[0][offset_table_size:])
 
         ja_records = {}
         en_records = {}
