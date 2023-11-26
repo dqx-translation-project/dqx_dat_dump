@@ -3,7 +3,6 @@ import pathlib
 import sqlite3
 import sys
 sys.path.append("../../")  # hack to use tools
-from tools.idx_searcher.main import find_file
 from tools.py_globals import GAME_DATA_DIR
 from tools.lib.idxfile import IdxFile
 from tools.lib.datfile import DatFile
