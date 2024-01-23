@@ -3,10 +3,10 @@ import csv
 import sqlite3
 import sys
 sys.path.append("../../")  # hack to use tools
-from tools.idx_searcher.main import find_file, reverse_hex_string_le
+from tools.idx_searcher.main import reverse_hex_string_le
 
 
-DB_PATH = "./dat_db.db"
+DB_PATH = "./dat_db_new.db"
 DB_CONN = sqlite3.connect(DB_PATH)
 DB_CUR = DB_CONN.cursor()
 
