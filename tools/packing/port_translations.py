@@ -9,7 +9,7 @@ import sqlite3
 from zipfile import ZipFile as zfile
 import sys
 sys.path.append("../../")  # hack to use tools
-from tools.globals import GITHUB_URL
+from tools.py_globals import GITHUB_URL
 
 
 DB_PATH = "../import_sql/dat_db.db"

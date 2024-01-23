@@ -4,10 +4,10 @@ import os
 import sqlite3
 import sys
 sys.path.append("../../")  # hack to use tools
-from tools.lib.datfile import DatEntry
+from tools.lib.datentry import DatEntry
 from tools.lib.idxfile import IdxFile
 from tools.lib.rpsfile import RpsFile
-from tools.globals import GAME_DATA_DIR
+from tools.py_globals import GAME_DATA_DIR
 from tools.dump_etps.dqxcrypt.dqxcrypt import (
     attach_client,
     bruteforce
@@ -27,7 +27,7 @@ def find_rps_etp():
     idx = f"{GAME_DATA_DIR}\\data00000000.win32.idx"
     dat = f"{GAME_DATA_DIR}\\data00000000.win32.dat0"
     file = IdxFile(idx)
-    for record in file.records["records"]:
+    for record in file.records:
         if record["filename"] == "800718ca783ff612":  # special RPS that has all initially loaded ETPs in it
             return ({"idx": idx, "dat": dat, "file": record["filename"][0:8], "dir": record["filename"][8:16], "dat_offset": record["dat_offset"]})
     return None

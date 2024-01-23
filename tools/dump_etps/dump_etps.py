@@ -4,11 +4,11 @@ import os
 import sqlite3
 import sys
 sys.path.append("../../")  # hack to use tools
-from tools.lib.datfile import DatEntry
+from tools.lib.datentry import DatEntry
 from tools.lib.extensions import EXTENSIONS
 from tools.lib.idxfile import IdxFile
 from tools.idx_searcher.main import get_idx_files
-from tools.globals import GAME_DATA_DIR
+from tools.py_globals import GAME_DATA_DIR
 from tools.dump_etps.dqxcrypt.dqxcrypt import (
     attach_client,
     decrypt
@@ -24,7 +24,7 @@ def find_etps():
     idx_list = get_idx_files()
     for idx in idx_list:
         file = IdxFile(idx)
-        for record in file.records["records"]:
+        for record in file.records:
             if record["filename"][8:16] == "669a9b71":  # common/data/eventText/ja/current. all ETP files are here
                 idx_file = idx.split("\\")[-1]
                 dat_file = idx_file.replace(".win32.idx", f".win32.dat{record['dat_num']}")
