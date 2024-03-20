@@ -111,10 +111,12 @@ def pack_etp_rps():
             file_path = glob.glob(f"../dump_etps/rps/packageManagerRegistIncludeAutoClient_rps/{file}*")
             file_basename = os.path.basename(file_path[0])
             file_ext = os.path.splitext(file_path[0])[1]
-            if file_ext != ".etp":
-                new_file_path = f"../dump_etps/rps/packageManagerRegistIncludeAutoClient_rps/{file_basename}"
-            else:
+            if file_ext == ".etp":
                 new_file_path = f"new_etp/{file_basename}"
+            elif file_ext == ".cry":
+                new_file_path = f"new_etp/{os.path.splitext(file_basename[0])}"  # remove .cry extension
+            else:
+                new_file_path = f"../dump_etps/rps/packageManagerRegistIncludeAutoClient_rps/{file_basename}"
 
 
             # there may be an ETP or two that we don't move to "new_etp" because we don't support
