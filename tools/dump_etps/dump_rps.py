@@ -1,6 +1,7 @@
 import argparse
 import glob
 import os
+import pathlib
 import sqlite3
 import sys
 sys.path.append("../../")  # hack to use tools
@@ -48,6 +49,13 @@ def extract_rps():
     rps_data.dump()
 
 
+def move_etps_to_etp_dir():
+    files = glob.glob("rps/packageManagerRegistIncludeAutoClient_rps/*.etp")
+    pathlib.Path("etps").mkdir(exist_ok=True)
+    for file in files:
+        os.replace(src=file, dst=f"etps/{os.path.basename(file)}")
+
+
 def decrypt_cry_files():
     """
     Run dqxcrypt to decrypt encrypted CRY files.
@@ -80,5 +88,6 @@ if __name__ == "__main__":
     if args.u:
         dump_rps_etp()
         extract_rps()
+        move_etps_to_etp_dir()
     elif args.d:
         decrypt_cry_files()
