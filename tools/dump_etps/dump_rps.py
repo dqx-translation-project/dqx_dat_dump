@@ -2,6 +2,7 @@ import argparse
 import glob
 import os
 import pathlib
+import shutil
 import sqlite3
 import sys
 sys.path.append("../../")  # hack to use tools
@@ -53,7 +54,7 @@ def move_etps_to_etp_dir():
     files = glob.glob("rps/packageManagerRegistIncludeAutoClient_rps/*.etp")
     pathlib.Path("etps").mkdir(exist_ok=True)
     for file in files:
-        os.replace(src=file, dst=f"etps/{os.path.basename(file)}")
+        shutil.copy2(src=file, dst=f"etps/{os.path.basename(file)}")
 
 
 def decrypt_cry_files():
