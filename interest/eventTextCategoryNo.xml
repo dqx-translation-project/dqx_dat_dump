@@ -831,12 +831,35 @@
   <Category No="24408" Name="LiveSiblingEditCostumeMake" />
   <Category No="24409" Name="CsMq60931" />
   <Category No="24412" Name="CsMq60951" />
+  <Category No="24422" Name="CsFq62751" />
   <Category No="24427" Name="LiveHousePortalItem" />
+  <Category No="24428" Name="CsSq60881" />
+  <Category No="24429" Name="CsMq60971" />
   <Category No="24436" Name="CsMe6" />
   <Category No="24437" Name="CsMq60941" />
   <Category No="24442" Name="LiveHousingMyset" />
   <Category No="24445" Name="CsSq60831" />
+  <Category No="24454" Name="CsMf6" />
+  <Category No="24467" Name="CsJ17" />
   <Category No="24469" Name="LiveTenkaiWeeklyMissionNpc" />
+  <Category No="24476" Name="CsJ47" />
+  <Category No="24478" Name="CsJ27" />
+  <Category No="24480" Name="CsSq60871" />
+  <Category No="24481" Name="CsSq60851" />
   <Category No="24483" Name="CsSq60841" />
   <Category No="24484" Name="CsSq60842" />
+  <Category No="24494" Name="SysWldjnyc" />
+  <Category No="24505" Name="CsJ37" />
+  <Category No="24506" Name="CsTq70171" />
+  <Category No="24507" Name="CsJq70231" />
+  <Category No="24508" Name="CsJq70232" />
+  <Category No="24509" Name="CsJq70233" />
+  <Category No="24510" Name="CsJq70234" />
+  <Category No="24511" Name="CsJq70235" />
+  <Category No="24532" Name="CsJ57" />
+  <Category No="24533" Name="LiveHighendThirdReward" />
+  <Category No="24535" Name="LiveCharmBuffNpc" />
+  <Category No="24570" Name="CsSq70891" />
+  <Category No="24577" Name="LiveCompanionAdvCompanion" />
+  <Category No="24587" Name="LiveCompanionAdvPresent" />
 </EventText>
