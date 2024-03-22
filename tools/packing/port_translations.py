@@ -93,8 +93,9 @@ def migrate_jsons():
 
                 new_data[str_id][search_key] = existing_record
 
-            with open(f"new_json/en/{basename}", "w+", encoding="utf-8") as f:
+            with open(f"new_json/en/{basename}", "w+", encoding="utf-8", newline="\n") as f:
                 f.write(json.dumps(new_data, ensure_ascii=False, indent=2))
+                f.write("\n")
                 copy(src=f"json/ja/{basename}", dst=f"new_json/ja/{basename}")
         else:
             print(f"Did not find an existing json file, so migration will not happen. Moving {basename} as-is.")
