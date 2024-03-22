@@ -15,9 +15,10 @@ from tools.lib.fileops import (
 def write_to_json(orig_filename: str, data: list, locale: str):
     os.makedirs(f"json/{locale}", exist_ok=True)
     file = os.path.split(orig_filename)[1].split(".etp")[0] + ".json"
-    with open(f"json/{locale}/{file}", "w+", encoding="utf-8") as f:
+    with open(f"json/{locale}/{file}", "w+", encoding="utf-8", newline="\n") as f:
         to_write = json.dumps(data, ensure_ascii=False, indent=2)
         f.write(to_write)
+        f.write("\n")  # weblate adds a newline to EOF, so we should to prevent diffs.
 
 
 def determine_etp_version(file: str) -> int:
