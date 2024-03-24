@@ -71,9 +71,10 @@ def update_db(file_hash: str, dir_hash: str, dat: str, idx: str):
 
 def get_blowfish_key(file: str):
     """
-    Looks up a file to retrieve the 
+    Does a database lookup to retrieve the file's associated blowfish key.
+    Returns None if there is no blowfish key.
     """
-    DB_CUR.execute(f"SELECT blowfish_key FROM files WHERE file = \"{file}\" OR clarity_name = \"{file}\"")
+    DB_CUR.execute(f"SELECT blowfish_key FROM files WHERE blowfish_key != 'TBD' AND (file = \"{file}\" OR clarity_name = \"{file}\")")
     results = DB_CUR.fetchone()
     if results:
         return results[0]
