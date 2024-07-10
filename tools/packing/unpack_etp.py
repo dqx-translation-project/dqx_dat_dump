@@ -141,23 +141,42 @@ def unpack_etp_4(file: str):
         evtx_header = unpack("4s", f.read(4))[0]
         if evtx_header != b"EVTX":
             return "Not an ETP file."
+        
+        # ignore other headers and jump straight to INDX
         f.seek(88)  # jump to INDX length
+
+        # size of entire INDX table (minus the first 16 bytes for the INDX header)
         indx_size = unpack_uint(f.read(4))
         f.read(4)  # jump passed junk
-        indx_table = f.read(indx_size)  # read in entire indx table
-        f.seek(-indx_size, 1)  # go backwards
+
+        # read in entire indx table starting at pos 96
+        indx_table = f.read(indx_size)
+
+        # go back to the beginning of the indx table at pos 96
+        f.seek(-indx_size, 1)
+
+        # first 2 bytes are str table size. str table size is read as ushort * 2, or 18810
         str_table_size = unpack("<H", f.read(2))[0] * 2
+
+        # next 2 bytes are offset table size. offset table size is read as ushort * 2, or 12944
         offset_table_size = unpack("<H", f.read(2))[0] * 2
 
+        # this is not hit.
         if str_table_size == 0:
             print(f"String table length is 0 for {file}. I'm ignoring this file because it's abnormal.")
             return
 
+        # this just gets TEXT stuff and isn't the current problem.
         f.seek(96 + indx_size) # jump passed indx table
         f.read(32)  # jump passed FOOT + TEXT
         text_pos = f.tell()
 
+        # read our index table buffer to get the entire string table. we start at pos 20 in the buffer as we read this already.
+        # strings start at pos 20 in the indx_table buffer.
         string_table = indx_table[20:20+str_table_size]
+
+        # immediately after the string table in our buffer is the offset table. 20+ skips the first 20 bytes we already read
+        # previously and we read passed the entire string table all the way to the end of the buffer.
         offset_table = bytearray(indx_table[20+str_table_size:])
 
         # if offset table starts with "CD AB", this was part of the string table
@@ -165,16 +184,44 @@ def unpack_etp_4(file: str):
         if offset_table[0:2] == b"\xCD\xAB":
             del offset_table[0:2]
 
-        offset_tables = [o for o in offset_table.split(b"\xCD\xAB") if o]
+
+        # this is a little janky to rely on, but if we find a needle in our haystack that is an odd number, we've found the
+        # wrong delimiter. this splits the short and long offset tables up based on what we find.
+        # the more "right" way to approach this would probably be to read the offsets 2 bytes at a time and look for a match,
+        # but this was much quicker to implement.
+        offset_tables = []
+
+        pos = 0
+        while True:
+            pos = offset_table.find(b"\xCD\xAB", pos)
+
+            # we didn't find a match at all. treat it as one bytearray.
+            if (pos == -1):
+                offset_tables.append(offset_table[0:])
+                break
+
+            # we found a match, but it's in the middle of two uints (because the number is negative). not the right delimiter.
+            # keep looking...
+            if (pos % 2) != 0:
+                pos = pos + 1
+                continue
+
+            # we found a match and the number is positive. this is the right delimiter. split the table into short and long.
+            if (pos % 2) == 0:
+                offset_tables.append(offset_table[0:pos])
+                offset_tables.append(offset_table[pos+2:])
+                break
+
         short_offset_table = bytearray(offset_tables[0])
         long_offset_table = bytearray()
 
-        # if we split on \xCD\xAB, there's more than one item in the list.
+        # if we have more than one item in our offset_tables list, we have a long offset table we need to handle.
         if len(offset_tables) > 1:
             if len(offset_tables[1]) > 14:
                 long_offset_table = bytearray(offset_tables[1])
-        # if there wasn't a \xCD\xAB split, but there are long offsets
-        # present, we need to split them up so we can read them correctly.
+
+        # we didn't find a CD AB delimiter, but there are definitely some long offsets in here because the offset
+        # count that we read doesn't match. split the table up based on what we know.
         elif len(short_offset_table) > offset_table_size:
             short_offset_table = bytearray(offset_tables[0][:offset_table_size])
             long_offset_table = bytearray(offset_tables[0][offset_table_size:])
@@ -241,29 +288,3 @@ if __name__ == "__main__":
         for etp in etps:
             print(etp)
             unpack_etp(file=etp)
-
-
-# 0400 -> version 4
-#  - string size in TEXT must be even number of bytes (including null terminator). if not, pad with extra 00 to make even amount.
-#  - After 16 bytes from INDX, first unsigned short is number of entries of string id, next unsigned short is number of entries in offset table
-#  - INDX is read in two parts - string_id and offset
-    #  - After 16 bytes from INDX, number of entries for both string id and offset are seen here as unsigned shorts
-    #  - For the offsets, you need to take the offset * 2 to get the next file position
-    #  - Both tables have "CD AB" as last byte ("AB CD"), meaning the table is done. don't calculate this as a string id / offset
-    #  - both string ids and offsets are 2 bytes (rather than usual 4 bytes from other versions)
-    #  - string lengths must always be an even number of bytes (after null terminator). if odd, add an additional 00 to pad out to make it even
-# 0200 -> version 2 (common) - read as usual. 16 bytes per indx row
-# 0100 -> version 1  - first text record is padded with two 00's, then read as usual.
-#  - number of text bytes (including NT) must always be even. if not, add an extra NT to pad it to make it even
-#  - this version does not use string IDs (at least, it is not obvious at all like the others)
-#  - offsets start 20 bytes into the INDX table
-#  - the first entry (00 00) always points to a text that is just an NT. this makes it an odd number of bytes, so we must add another to make it even
-# 0000 -> version 0  - same as version 2
-
-# entry_table_start = 0x30 # fixed
-# entry_size = 2  # always 16, this is how indx is structured
-# alignment = 1024
-# entry_count = 60
-
-# # calculate from beginning of INDX header where first text starts
-# (entry_table_start + (entry_size*entry_count) + alignment - 1) & ~(alignment - 1)
