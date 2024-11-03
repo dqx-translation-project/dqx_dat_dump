@@ -24,7 +24,7 @@ class IdxFile:
         self.segments = self.segments(
             buf=file_data[SMPK_SIZE:SMPK_SIZE+STRUCT_SIZE])
         self.records = self.records(
-            buf=file_data[SMPK_SIZE+STRUCT_SIZE:self.segments[1]["size"]]
+            buf=file_data[SMPK_SIZE+STRUCT_SIZE:SMPK_SIZE+STRUCT_SIZE+self.segments[1]["size"]]
         )
 
     def smpk(self, buf):
