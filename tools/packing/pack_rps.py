@@ -114,10 +114,7 @@ def pack_etp_rps():
             file_ext = os.path.splitext(file_path[0])[1]
             if file_ext == ".etp":
                 new_file_path = f"new_etp/{file_basename}"
-            elif (
-                file_ext == ".cry"
-                and Path(f"new_etp/{file_basename}{file_ext}").exists()
-            ):
+            elif file_ext == ".cry" and Path(f"new_etp/{file_basename}").exists():
                 new_file_path = f"new_etp/{os.path.splitext(file_basename)[0]}"  # remove .cry extension
             else:
                 new_file_path = f"../dump_etps/rps/packageManagerRegistIncludeAutoClient_rps/{file_basename}"
