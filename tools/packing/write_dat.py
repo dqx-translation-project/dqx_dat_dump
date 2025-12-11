@@ -260,9 +260,13 @@ def write_etps():
             print(f"Did not find {basename} in the database. Skipping.")
             continue
         file_dir_hash = db_result[0]
-        idx_loc = find_file(filename=file_dir_hash)
-        if not idx_loc:
-            print("Could not find hash in any idx files. Skipping")
+
+        try:
+            idx_loc = find_file(filename=file_dir_hash)
+        except Exception as e:
+            print(
+                f"Could not find hash in any idx files for file {file}. Skipping. Error: {e}"
+            )
             continue
 
         write_to_dat(
