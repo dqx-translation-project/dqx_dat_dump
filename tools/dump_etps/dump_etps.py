@@ -56,7 +56,7 @@ def get_filename(file_hash: str):
         else:
             return None
         if blowfish_key:
-            name = name + ".rawenc"
+            name = name + ".cry"
         return name
 
 
@@ -86,8 +86,8 @@ def decrypt_file(file: str, agent: object):
     Run dqxcrypt to decrypt an ETP.
     DQX must be open for this to work.
     """
-    no_rawenc = file.replace(".rawenc", "")  # db doesn't store file as ".rawenc"
-    blowfish_key = get_blowfish_key(no_rawenc)
+    no_cry = file.replace(".cry", "")  # db doesn't store file as ".cry"
+    blowfish_key = get_blowfish_key(no_cry)
     if blowfish_key:
         decrypt(agent=agent, filepath=f"etps/{file}", encryption_key=blowfish_key)
         return True
@@ -116,24 +116,26 @@ def dump_all_etps():
                 if ext in EXTENSIONS:
                     filename = _file + EXTENSIONS[ext]
                 else:
-                    filename = _file + ".rawenc"  # if we don't know extension in this dir, it's highly likely encrypted
+                    filename = (
+                        _file + ".cry"
+                    )  # if we don't know extension in this dir, it's highly likely encrypted
             print(f"Writing {filename}")
             write_etp(filename=filename, data=file_data)
 
 
 def decrypt_etps():
     """
-    Decrypt all rawenc files in the "etps" folder.
+    Decrypt all cry files in the "etps" folder.
     """
     if not os.path.exists("etps"):
         sys.exit("Dump the ETPs first and then attempt to decrypt.")
     agent = attach_client()
-    etps = glob.glob("etps/*.rawenc")
+    etps = glob.glob("etps/*.cry")
     for etp in etps:
         basename = os.path.basename(etp)
         if decrypt_file(file=basename, agent=agent):
-            no_rawenc = basename.replace(".rawenc", "")
-            os.replace(src=f"etps/{basename}.dec", dst=f"etps/{no_rawenc}")
+            no_cry = basename.replace(".cry", "")
+            os.replace(src=f"etps/{basename}.dec", dst=f"etps/{no_cry}")
             os.remove(etp)
     agent.detach_game()
 
@@ -141,7 +143,12 @@ def decrypt_etps():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Dumps and unencrypts ETPs.")
     parser.add_argument("-u", default=False, action="store_true", help="Unpack ETPs from the data00000000 DAT.")
-    parser.add_argument("-d", default=False, action="store_true", help="Decrypts ETPs ending in \".rawenc\" in the etps folder.")
+    parser.add_argument(
+        "-d",
+        default=False,
+        action="store_true",
+        help='Decrypts ETPs ending in ".cry" in the etps folder.',
+    )
     args = parser.parse_args(args=None if sys.argv[1:] else ["--help"])
 
     if args.u and args.d:
