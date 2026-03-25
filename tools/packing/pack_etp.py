@@ -392,111 +392,104 @@ def build_etp_1(json_list: list, src_etp: str):
 def get_duplicate_offsets_4(src_etp: str):
     basename = os.path.basename(src_etp)
     with open(f"../dump_etps/etps/{basename}", "rb") as f:
-        # get string table information
         indx_start = 96
         f.seek(indx_start)
-        string_table_size = unpack("<H", f.read(2))[0]
+        indx_header = f.read(20)
 
-        # get offset table information
-        string_table_start = 116
-        f.seek(string_table_start)
-        f.seek((string_table_size * 2), 1)
-        offset_table_start = f.tell()
-        if offset_table_start % 4 != 0:
-            offset_table_start += 2
+        short_id_count   = unpack("<H", indx_header[0:2])[0]
+        short_off_count  = unpack("<H", indx_header[2:4])[0]
+        long_str_start   = unpack("<I", indx_header[8:12])[0]
+        short_off_start  = unpack("<I", indx_header[12:16])[0]
+        long_off_start   = unpack("<I", indx_header[16:20])[0]
 
-        # short offset information
-        f.seek(112)
-        short_offset_end = unpack("<I", f.read(4))[0] + indx_start  # get exact file pos by adding indx_start
+        long_id_count  = (short_off_start - long_str_start) // 4
+        total_id_count = short_id_count + long_id_count
 
-        # iterate over string ids
-        str_pos = string_table_start
-        off_pos = offset_table_start
-        ushort = 2
-        uint = 4
+        # read 2-byte string IDs
+        f.seek(indx_start + 20)
+        all_str_ids = [unpack("<H", f.read(2))[0] for _ in range(short_id_count)]
+
+        # read 4-byte string IDs (empty section when all IDs fit in a ushort)
+        f.seek(indx_start + long_str_start)
+        all_str_ids += [unpack("<I", f.read(4))[0] for _ in range(long_id_count)]
+
+        # read short (2-byte) offsets
+        f.seek(indx_start + short_off_start)
+        all_offsets = [unpack("<H", f.read(2))[0] for _ in range(short_off_count)]
+
+        # read long (4-byte) offsets
+        f.seek(indx_start + long_off_start)
+        all_offsets += [unpack("<I", f.read(4))[0] for _ in range(total_id_count - short_off_count)]
+
+        # associate offset <-> str_id to find duplicates.
+        # the offsets themselves are irrelevant for packing because our data will have
+        # different offsets, so just group the string ids together to get the duplicates.
         offset_dict = {}
-        for i in range(0, string_table_size):
-            f.seek(str_pos)
-            str_id = unpack("<H", f.read(2))[0]
-            f.seek(off_pos)
-
-            if f.tell() < short_offset_end:
-                # if we encounter a table split in the offset table, skip over it
-                # and read as a uint. otherwise, reset the file pointer.
-                if f.read(2) != b"\xCD\xAB":
-                    f.seek(-2, 1)
-                    offset = unpack("<H", f.read(ushort))[0]
-                    off_pos += ushort
-                else:
-                    offset = unpack("<I", f.read(uint))[0]
-                    off_pos += uint + 2  # add the "CD AB" bytes we ignored
-            else:
-                offset = unpack("<I", f.read(uint))[0]
-                off_pos += uint
-
-            # associate offset <-> str_id to find duplicates
-            if offset_dict.get(offset):
-                offset_dict[offset] += [str_id]
+        for str_id, offset in zip(all_str_ids, all_offsets):
+            if offset in offset_dict:
+                offset_dict[offset].append(str_id)
             else:
                 offset_dict[offset] = [str_id]
 
-            str_pos += ushort
-
-        # the offsets themselves are irrelevant for packing because our data will have
-        # different offsets, so just group the string ids together to get the duplicates.
-        offset_list = []
-        for offset in offset_dict:
-            offset_list.append(offset_dict[offset])
-
-        return offset_list
+        return list(offset_dict.values())
 
 
 def build_etp_4(json_list: list, src_etp: str):
     "Builds an ETP file for file version 4."
     with open(src_etp, "rb") as f:
         orig_etp_data = f.read(116)
-        indx_size = unpack("<I", orig_etp_data[88:92])[0]
-        str_table_size = unpack("<H", orig_etp_data[96:98])[0] * 2
-        f.seek(96)  # go back to beginning of indx table
-        orig_indx_table = f.read(indx_size)
+        f.seek(96)
+        orig_indx_table = f.read(unpack("<I", orig_etp_data[88:92])[0])
+
+    indx_header = orig_indx_table[:20]
+    str_table_size  = unpack("<H", indx_header[0:2])[0] * 2
+    long_str_start  = unpack("<I", indx_header[8:12])[0]
+    short_off_start = unpack("<I", indx_header[12:16])[0]
+
+    # 2-byte and 4-byte string ID sections — copied unchanged from original
+    short_string_table = orig_indx_table[20:20+str_table_size]
+    long_string_table  = orig_indx_table[long_str_start:short_off_start]
 
     etp_file = os.path.basename(src_etp)
     with open(f"new_etp/{etp_file}", "w+b") as etp_f:
-        # write beginning of file
+        # write beginning of file (includes the 20-byte INDX sub-header verbatim;
+        # bytes 8-15 describe string ID section positions which stay the same since
+        # we copy both string tables unchanged)
         etp_f.write(orig_etp_data)
 
-        # first, we need to build our new string table.
         dupe_string_list = get_duplicate_offsets_4(src_etp)
         text_tables = build_string_table_4(json_list=json_list, dupe_string_list=dupe_string_list)
         str_text = text_tables[0]
         str_bytes = text_tables[1]
 
-        # now we need to read the existing offset table, find the original offset in the
-        # new str_table, grab the new offset we generated and write it here.
-        orig_current_pos = 20
-        string_table = orig_indx_table[orig_current_pos:orig_current_pos+str_table_size]
+        # write 2-byte string ID table
+        etp_f.write(short_string_table)
 
-        # write string table to file
-        etp_f.write(string_table)
-
-        # if table is not 4 byte aligned, need to add "CD AB" bytes
+        # align to 4 bytes with CD AB if needed
         if etp_f.tell() % 4 != 0:
             etp_f.write(b"\xCD\xAB")
 
-        # iterate over string table
+        # write 4-byte string ID table (empty for files where all IDs fit in a ushort)
+        etp_f.write(long_string_table)
+
+        # record where the offset table starts (after both string ID sections)
+        off_table_start = etp_f.tell()
+
+        # iterate all string IDs in order: 2-byte first, then 4-byte
+        all_string_ids = [s[0] for s in iter_unpack("<H", short_string_table)]
+        all_string_ids += [s[0] for s in iter_unpack("<I", long_string_table)]
+
         wrote_offset_divider = False
         strings_written = 0
-        short_offset_start = etp_f.tell()
         short_offset_end = 0
         wrote_cdab = False
-        for s_id in iter_unpack("<H", string_table):
-            find_dupe = search_sublist(str_id_list=dupe_string_list, search_id=s_id[0])[0]
+        for s_id in all_string_ids:
+            find_dupe = search_sublist(str_id_list=dupe_string_list, search_id=s_id)[0]
             result = str_text[str(find_dupe)]
 
             # write in shorts until we encounter our first uint
             if result["new_offset"] <= 65535 and not wrote_offset_divider:
-                new_offset = pack_ushort(result["new_offset"])
-                etp_f.write(new_offset)
+                etp_f.write(pack_ushort(result["new_offset"]))
                 strings_written += 1
             else:
                 # hit our first uint. split the table up
@@ -508,8 +501,7 @@ def build_etp_4(json_list: list, src_etp: str):
                     wrote_offset_divider = True
                 # hit an int that is too large to fit in a short. this table
                 # will have a 4 byte offset section in the indx table.
-                new_offset = pack_uint(result["new_offset"])
-                etp_f.write(new_offset)
+                etp_f.write(pack_uint(result["new_offset"]))
                 strings_written += 1
 
         # if table is not 4 byte aligned, need to add "CD AB" bytes to make it so
@@ -523,18 +515,17 @@ def build_etp_4(json_list: list, src_etp: str):
         align_file(file_obj=etp_f, alignment=16)
         end_of_indx = etp_f.tell()
 
-        # update short offset table size
-        short_offset_size = int((short_offset_end - short_offset_start) / 2)
+        # update bytes 2-3: count of short offsets
+        short_offset_count = int((short_offset_end - off_table_start) / 2)
         etp_f.seek(98)
-        etp_f.write(pack_ushort(short_offset_size))
+        etp_f.write(pack_ushort(short_offset_count))
 
-        # update string id + short offset table total size
-        # the cdab bytes must be included in the total size
+        # update bytes 16-19: start of long offset table (= end of short offsets + any CD AB)
+        long_offset_start = short_offset_end - 96
         if wrote_offset_divider and wrote_cdab:
-            short_offset_end += 2
-        total_str_id_off_size = (short_offset_end - 96)  # chop off beginning file bytes up until string_ids start
+            long_offset_start += 2
         etp_f.seek(112)
-        etp_f.write(pack_uint(total_str_id_off_size))
+        etp_f.write(pack_uint(long_offset_start))
 
         new_indx_size = end_of_indx - 96
         etp_f.seek(88)
@@ -545,8 +536,10 @@ def build_etp_4(json_list: list, src_etp: str):
         etp_f.write(str_bytes)
         align_file(file_obj=etp_f, alignment=16)
         recalculate_headers(file_obj=etp_f)
-        if (str_table_size / 2) != strings_written:
-            print(f"ERROR: File {etp_file} did not write correct amount of strings. Expected: {str_table_size / 2}, Actual: {strings_written}")
+
+        total_ids = len(short_string_table) // 2 + len(long_string_table) // 4
+        if total_ids != strings_written:
+            print(f"ERROR: File {etp_file} did not write correct amount of strings. Expected: {total_ids}, Actual: {strings_written}")
 
 
 def build_etp(json_file: list, src_etp: str):
