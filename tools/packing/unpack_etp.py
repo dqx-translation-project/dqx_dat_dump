@@ -2,14 +2,11 @@ import argparse
 import glob
 import json
 import os
-from struct import unpack, iter_unpack
 import sys
+from struct import iter_unpack, unpack
+
 sys.path.append("../../")  # hack to use tools
-from tools.lib.fileops import (
-    unpack_uint,
-    unpack_ushort,
-    read_cstr
-)
+from tools.lib.fileops import read_cstr, unpack_uint, unpack_ushort
 
 
 def write_to_json(orig_filename: str, data: list, locale: str):
@@ -62,7 +59,7 @@ def unpack_etp_0_2(file: str):
             ja_record = {text_str: text_str}
             en_record = {text_str: ""}
             ja_records[string_id] = ja_record
-            en_records[string_id] = en_record 
+            en_records[string_id] = en_record
 
             count += 1
             position += 8
@@ -141,7 +138,7 @@ def unpack_etp_4(file: str):
         evtx_header = unpack("4s", f.read(4))[0]
         if evtx_header != b"EVTX":
             return "Not an ETP file."
-        
+
         # ignore other headers and jump straight to INDX
         f.seek(88)  # jump to INDX length
 
@@ -155,10 +152,10 @@ def unpack_etp_4(file: str):
         # go back to the beginning of the indx table at pos 96
         f.seek(-indx_size, 1)
 
-        # first 2 bytes are str table size. str table size is read as ushort * 2, or 18810
+        # first 2 bytes: count of 2-byte string IDs (ushort). multiply by 2 to get byte length.
         str_table_size = unpack("<H", f.read(2))[0] * 2
 
-        # next 2 bytes are offset table size. offset table size is read as ushort * 2, or 12944
+        # next 2 bytes: count of 2-byte (short) offsets (ushort). multiply by 2 to get byte length.
         offset_table_size = unpack("<H", f.read(2))[0] * 2
 
         # this is not hit.
@@ -166,72 +163,39 @@ def unpack_etp_4(file: str):
             print(f"String table length is 0 for {file}. I'm ignoring this file because it's abnormal.")
             return
 
-        # this just gets TEXT stuff and isn't the current problem.
         f.seek(96 + indx_size) # jump passed indx table
         f.read(32)  # jump passed FOOT + TEXT
         text_pos = f.tell()
 
-        # read our index table buffer to get the entire string table. we start at pos 20 in the buffer as we read this already.
-        # strings start at pos 20 in the indx_table buffer.
-        string_table = indx_table[20:20+str_table_size]
+        # INDX header bytes 8-11: start position (within indx_table) of the 4-byte string ID section.
+        # When all IDs fit in a ushort this equals the short offset table start (empty 4-byte section).
+        long_str_start = unpack("<I", indx_table[8:12])[0]
 
-        # immediately after the string table in our buffer is the offset table. 20+ skips the first 20 bytes we already read
-        # previously and we read passed the entire string table all the way to the end of the buffer.
-        offset_table = bytearray(indx_table[20+str_table_size:])
+        # INDX header bytes 12-15: start position of the short (2-byte) offset table.
+        short_offset_start = unpack("<I", indx_table[12:16])[0]
 
-        # if offset table starts with "CD AB", this was part of the string table
-        # that isn't included in the size. get rid of it
-        if offset_table[0:2] == b"\xCD\xAB":
-            del offset_table[0:2]
+        # INDX header bytes 16-19: start position of the long (4-byte) offset table.
+        long_offset_start = unpack("<I", indx_table[16:20])[0]
 
+        # 2-byte string IDs start at byte 20.
+        short_string_table = indx_table[20:20+str_table_size]
 
-        # this is a little janky to rely on, but if we find a needle in our haystack that is an odd number, we've found the
-        # wrong delimiter. this splits the short and long offset tables up based on what we find.
-        # the more "right" way to approach this would probably be to read the offsets 2 bytes at a time and look for a match,
-        # but this was much quicker to implement.
-        offset_tables = []
+        # 4-byte string IDs follow. This section is empty when all IDs fit in a ushort.
+        long_string_table = indx_table[long_str_start:short_offset_start]
 
-        pos = 0
-        while True:
-            pos = offset_table.find(b"\xCD\xAB", pos)
-
-            # we didn't find a match at all. treat it as one bytearray.
-            if (pos == -1):
-                offset_tables.append(offset_table[0:])
-                break
-
-            # we found a match, but it's in the middle of two uints (because the number is negative). not the right delimiter.
-            # keep looking...
-            if (pos % 2) != 0:
-                pos = pos + 1
-                continue
-
-            # we found a match and the number is positive. this is the right delimiter. split the table into short and long.
-            if (pos % 2) == 0:
-                offset_tables.append(offset_table[0:pos])
-                offset_tables.append(offset_table[pos+2:])
-                break
-
-        short_offset_table = bytearray(offset_tables[0])
-        long_offset_table = bytearray()
-
-        # if we have more than one item in our offset_tables list, we have a long offset table we need to handle.
-        if len(offset_tables) > 1:
-            if len(offset_tables[1]) > 14:
-                long_offset_table = bytearray(offset_tables[1])
-
-        # we didn't find a CD AB delimiter, but there are definitely some long offsets in here because the offset
-        # count that we read doesn't match. split the table up based on what we know.
-        elif len(short_offset_table) > offset_table_size:
-            short_offset_table = bytearray(offset_tables[0][:offset_table_size])
-            long_offset_table = bytearray(offset_tables[0][offset_table_size:])
+        # offset tables are split into short (2-byte) and long (4-byte) sections at known positions.
+        short_offset_table = bytearray(indx_table[short_offset_start:short_offset_start+offset_table_size])
+        long_offset_table = bytearray(indx_table[long_offset_start:])
 
         ja_records = {}
         en_records = {}
         offsets_written = []
 
-        # iterate over the string table
-        for string_id in iter_unpack("<H", string_table):
+        # iterate over all string IDs: 2-byte IDs first, then 4-byte IDs.
+        all_string_ids = [s[0] for s in iter_unpack("<H", short_string_table)]
+        all_string_ids += [s[0] for s in iter_unpack("<I", long_string_table)]
+
+        for string_id in all_string_ids:
             if short_offset_table:
                 offset = unpack("<H", short_offset_table[0:2])[0]
                 del short_offset_table[0:2]
@@ -248,8 +212,8 @@ def unpack_etp_4(file: str):
             f.seek(text_pos + (offset * 2))
 
             text_str = read_cstr(f)
-            ja_records[string_id[0]] = {text_str: text_str}
-            en_records[string_id[0]] = {text_str: ""}
+            ja_records[string_id] = {text_str: text_str}
+            en_records[string_id] = {text_str: ""}
             offsets_written.append(offset)
 
     return ja_records, en_records
