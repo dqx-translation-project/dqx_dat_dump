@@ -28,16 +28,8 @@ def read_json_file(file: str):
 
 
 def align_file(file_obj: object, alignment: int):
-    """
-    Add padding to end of file
-    until the number is divisible by alignment.
-    """
-    # add 00 padding to file to meet alignment needs.
-    while True:
-        eof = file_obj.seek(0, 2) / alignment
-        check_int = float(eof).is_integer()
-        if check_int:
-            return True
+    """Add padding to end of file until its size is divisible by alignment."""
+    while file_obj.seek(0, 2) % alignment != 0:
         file_obj.write(b"\x00")
 
 
@@ -51,31 +43,14 @@ def determine_etp_version(file: str) -> int:
     return int(version.hex())
 
 
-def find_versioned_files(version: int):
-    etps = glob.glob("../dump_etps/etps/*.etp")
-    files = []
-    for etp in etps:
-        with open(etp, "rb") as f:
-            junk = f.read(15)
-            file_ver = unpack("b", f.read(1))[0]
-            if version == file_ver:
-                files.append(etp)
-    return files
+def _pick_translation(record: dict) -> bytes:
+    """Returns the translated string (en) if available, otherwise the source (ja), as null-terminated UTF-8 bytes."""
+    ja, en = next(iter(record.items()))
+    return bytes(en if en else ja, encoding="utf-8") + b"\x00"
 
 
-def get_string_bytes(json_list: list, search_key: str, ensure_even_bytes=False):
-    str_bytes = b""
-    ja, en = next(iter(json_list[search_key].items()))
-    if en == "":
-        str_bytes = bytes(ja, encoding="utf-8") + b"\x00"
-    else:
-        str_bytes = bytes(en, encoding="utf-8") + b"\x00"
-    if ensure_even_bytes:
-        if len(str_bytes) % 2 == 0:
-            return str_bytes
-        else:
-            return str_bytes + b"\x00"
-    return str_bytes
+def get_string_bytes(json_list: list, search_key: str) -> bytes:
+    return _pick_translation(json_list[search_key])
 
 
 def search_sublist(str_id_list: list, search_id: int):
@@ -105,13 +80,7 @@ def build_string_table_1(json_list: list):
     final_bytes = bytearray()
     offset_data = {}
     for str_id in json_list:
-        ja, en = next(iter(json_list[str_id].items()))
-        if en == "":
-            # use the ja string, no translation
-            str_bytes = bytes(ja, encoding="utf-8") + b"\x00"
-        else:
-            # use the en string, it's translated
-            str_bytes = bytes(en, encoding="utf-8") + b"\x00"
+        str_bytes = _pick_translation(json_list[str_id])
         # ensures the string (including NTs) has an even number of bytes
         if len(str_bytes) % 2 != 0:
             str_bytes += b"\x00"
@@ -122,11 +91,10 @@ def build_string_table_1(json_list: list):
             # v1 files start at offset 1
             new_offset = 1
         final_bytes += str_bytes
-        offset = {
+        offset_data[str_id] = {
             "str": str_bytes,
             "new_offset": new_offset
         }
-        offset_data[str_id] = offset
     return offset_data, final_bytes
 
 
@@ -147,18 +115,12 @@ def build_string_table_4(json_list: list, dupe_string_list: list):
         # we want to check if this is the primary (first) match. if not,
         # all other string ids in the list are going to reference the first
         # occurrence. we don't want to add the dupes to the text table, so
-        # just map the existing offset. 
+        # just map the existing offset.
         if len(find_dupes) > 1 and int(str_id) != find_dupes[0]:
             str_bytes = b""
             new_offset = offset_data[str(find_dupes[0])]["new_offset"]
         else:
-            ja, en = next(iter(json_list[str_id].items()))
-            if en == "":
-                # use the ja string, no translation
-                str_bytes = bytes(ja, encoding="utf-8") + b"\x00"
-            else:
-                # use the en string, it's translated
-                str_bytes = bytes(en, encoding="utf-8") + b"\x00"
+            str_bytes = _pick_translation(json_list[str_id])
             # ensures the string (including NTs) has an even number of bytes
             if len(str_bytes) % 2 != 0:
                 str_bytes += b"\x00"
@@ -168,11 +130,10 @@ def build_string_table_4(json_list: list, dupe_string_list: list):
                 new_offset = 0
             final_bytes += str_bytes
 
-        offset = {
+        offset_data[str_id] = {
             "str": str_bytes,
             "new_offset": new_offset
         }
-        offset_data[str_id] = offset
 
     return offset_data, final_bytes
 
@@ -182,10 +143,10 @@ def recalculate_headers(file_obj: object):
     # update TEXT sizing
     file_obj.seek(88)
     indx_size = unpack_uint(file_obj.read(4))
-    file_obj.read(4)  # read passed padding
+    file_obj.read(4)  # read past padding
     file_obj.read(indx_size)
-    file_obj.read(16)  # read passed FOOT
-    file_obj.read(16)  # read passed TEXT
+    file_obj.read(16)  # read past FOOT
+    file_obj.read(16)  # read past TEXT
     text_start = file_obj.tell()
     text_end = file_obj.seek(0, 2)
     text_size = text_end - text_start
@@ -225,7 +186,7 @@ def build_etp_0_2(json_list: list, src_etp: str):
         indx_size = unpack_uint(orig_etp_data[88:92])
         indx_start = f.tell()
         orig_indx_table = f.read(indx_size)
-        f.read(32)  # skip passed foot + text
+        f.read(32)  # skip past FOOT + TEXT
         text_start = f.tell()
 
     etp_file = os.path.basename(src_etp)
@@ -242,7 +203,7 @@ def build_etp_0_2(json_list: list, src_etp: str):
             # update the indx entry first. we figure out where this is by jumping to the end
             # of the file, grabbing its position and subtracting it with the initial text start.
             text_offset = etp_f.seek(0, 2) - text_start # seek to end of file to get offset
-            etp_f.seek(indx_start + curr_indx_pos + 4) # jump passed string_id and get to text offset
+            etp_f.seek(indx_start + curr_indx_pos + 4) # jump past string_id and get to text offset
             etp_f.write(pack_uint(text_offset)) # update the new offset
             etp_f.seek(0, 2) # position pointer back to end of file to write text
             string_bytes = get_string_bytes(json_list=json_list, search_key=str(string_id))
@@ -458,9 +419,7 @@ def build_etp_4(json_list: list, src_etp: str):
         etp_f.write(orig_etp_data)
 
         dupe_string_list = get_duplicate_offsets_4(src_etp)
-        text_tables = build_string_table_4(json_list=json_list, dupe_string_list=dupe_string_list)
-        str_text = text_tables[0]
-        str_bytes = text_tables[1]
+        str_text, str_bytes = build_string_table_4(json_list=json_list, dupe_string_list=dupe_string_list)
 
         # write 2-byte string ID table
         etp_f.write(short_string_table)
@@ -543,18 +502,22 @@ def build_etp_4(json_list: list, src_etp: str):
 
 
 def build_etp(json_file: list, src_etp: str):
+    builders = {
+        0: build_etp_0_2,
+        2: build_etp_0_2,
+        1: build_etp_1,
+        4: build_etp_4,
+    }
     file_version = determine_etp_version(file=src_etp)
-    etp_json = read_json_file(file=json_file)
-    if file_version in [0, 2]:
-        data = build_etp_0_2(json_list=etp_json, src_etp=src_etp)
-    elif file_version == 1:
-        data = build_etp_1(json_list=etp_json, src_etp=src_etp)
-    elif file_version == 4:
-        data = build_etp_4(json_list=etp_json, src_etp=src_etp)
-    elif not file_version:
+    if not file_version:
         print("Not an ETP file.")
-    else:
+        return
+    builder = builders.get(file_version)
+    if builder is None:
         print(f"ETP version \"{file_version}\" is not currently supported.")
+        return
+    etp_json = read_json_file(file=json_file)
+    builder(json_list=etp_json, src_etp=src_etp)
 
 
 def build_all():
@@ -571,7 +534,10 @@ def recrypt_file(file: str):
     db_conn = sqlite3.connect(db_path)
     db_cur = db_conn.cursor()
     file = os.path.basename(file)
-    encrypted_file = db_cur.execute(f"SELECT file, blowfish_key from files WHERE blowfish_key IS NOT NULL AND file = \"{file}\"")
+    encrypted_file = db_cur.execute(
+        "SELECT file, blowfish_key FROM files WHERE blowfish_key IS NOT NULL AND file = ?",
+        (file,)
+    )
     result = encrypted_file.fetchone()
     if result:
         if os.path.exists(f"new_etp/{file}"):
@@ -587,7 +553,7 @@ def recrypt_files():
     db_path = "../import_sql/dat_db.db"
     db_conn = sqlite3.connect(db_path)
     db_cur = db_conn.cursor()
-    encrypted_files = db_cur.execute(f"SELECT file, blowfish_key from files WHERE blowfish_key IS NOT NULL")
+    encrypted_files = db_cur.execute("SELECT file, blowfish_key FROM files WHERE blowfish_key IS NOT NULL")
     for file in encrypted_files.fetchall():
         etp_file = file[0]
         recrypt_file(etp_file)
@@ -597,8 +563,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Read a JSON file dumped by this program and rebuild into an ETP file.")
     parser.add_argument("-e", "--etp-file", type=str, help="Path to ETP file.")
     parser.add_argument("-j", "--json-file", type=str, help="Path to translated JSON file.")
-    parser.add_argument("-a", "--pack-all", default=False, action="store_true", help="Pack all JSON files dumped by this program into ETP. Before using this flag, ensure you haven't changed any names.")
-    parser.add_argument("-r", "--recrypt", default=False, action="store_true", help="Recrypt files. DQX must be open. This only works when used with (-e and -j) or (-a).")
+    parser.add_argument("-a", "--pack-all", action="store_true", help="Pack all JSON files dumped by this program into ETP. Before using this flag, ensure you haven't changed any names.")
+    parser.add_argument("-r", "--recrypt", action="store_true", help="Recrypt files. DQX must be open. This only works when used with (-e and -j) or (-a).")
     args = parser.parse_args(args=None if sys.argv[1:] else ["--help"])
 
     os.makedirs("new_etp", exist_ok=True)
