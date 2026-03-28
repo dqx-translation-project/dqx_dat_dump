@@ -18,237 +18,229 @@ def write_to_json(orig_filename: str, data: list, locale: str):
         f.write("\n")  # weblate adds a newline to EOF, so we should to prevent diffs.
 
 
-def determine_etp_version(file: str) -> int:
-    with open(file, "rb") as f:
-        evtx_header = unpack("4s", f.read(4))[0]
-        if evtx_header != b"EVTX":
-            return None
-        f.read(11)
-        version = f.read(1)
-    return int(version.hex())
+def _parse_etp_event_text(f) -> tuple[dict, dict]:
+    # ETP v0/v2 file layout:
+    #   0x00 ( 4 bytes): "EVTX" magic
+    #   0x50 (80, 4 bytes): "INDX" section signature
+    #   0x54 (84, 4 bytes): INDX header length
+    #   0x58 (88, 4 bytes): INDX contents size (bytes)
+    #   0x5C (92, 4 bytes): padding
+    #   0x60 (96, N bytes): INDX contents — pairs of (string_id: uint32, offset: uint32)
+    #   0x60+N (16 bytes): FOOT section
+    #   0x60+N+16 (16 bytes): TEXT section header
+    #   0x60+N+32 onward: null-terminated strings (TEXT section body)
+    #
+    # Each INDX entry maps a string_id to a byte offset into the TEXT body.
+    # string_id == 0 is a placeholder/empty entry and is skipped.
+    f.seek(88)  # jump to INDX size field (past INDX sig at 80 and header length at 84)
+    indx_size = unpack_uint(f.read(4))
+    f.seek(96)  # jump to INDX contents (past padding at 92)
+    indx_contents = f.read(indx_size)
 
+    f.read(16)  # skip FOOT
+    f.read(16)  # skip TEXT header
+    text_pos = f.tell()
 
-def unpack_etp_0_2(file: str):
-    with open(file, "rb") as f:
-        evtx_header = unpack("4s", f.read(4))[0]
-        if evtx_header != b"EVTX":
-            return "Not an ETP file."
-        f.seek(80)  # jump to INDX structure
-        f.read(4)  # jump passed INDX signature
-        f.read(4)  # jump passed header length
-        indx_size = unpack_uint(f.read(4))
-        f.read(4)  # jump passed padding
-        indx_pos = f.tell()
-        indx_contents = f.read(indx_size)
-        f.read(16)  # jump passed FOOT
-        f.read(16)  # jump passed TEXT signature
+    ja_records = {}
+    for string_id, offset in iter_unpack("<I I", indx_contents):
+        if string_id == 0:
+            continue
+        f.seek(text_pos + offset)
+        text_str = read_cstr(f)
+        ja_records[string_id] = {text_str: text_str}  # source text maps to itself (used as translation key)
 
-        text_pos = f.tell()
-
-        # iterate over INDX structure
-        count = 0
-        position = 0
-        ja_records = {}
-        en_records = {}
-        for string_id, offset in iter_unpack("<I I", indx_contents):
-            if string_id == 0:
-                continue
-            f.seek(text_pos + offset)
-
-            text_str = read_cstr(f)
-            ja_record = {text_str: text_str}
-            en_record = {text_str: ""}
-            ja_records[string_id] = ja_record
-            en_records[string_id] = en_record
-
-            count += 1
-            position += 8
-
+    en_records = {sid: {text: ""} for sid, v in ja_records.items() for text in v}
     return ja_records, en_records
 
 
-def unpack_etp_1(file: str):
-    with open(file, "rb") as f:
-        evtx_header = unpack("4s", f.read(4))[0]
-        if evtx_header != b"EVTX":
-            return "Not an ETP file."
-        f.seek(44)  # jump to CMNH section that has number of offsets in file
-        offset_count = unpack_uint(f.read(4))
-        f.seek(88)  # jump to INDX structure
-        indx_size = unpack_uint(f.read(4))
-        f.seek(4, 1)
-        indx_contents = f.read(indx_size)
-        offset_table_size = unpack_ushort(indx_contents[2:4])  # size of offset table. if number of offsets is bigger than this, the table has a second section of offsets read in <I
-        f.seek(32, 1)
-        text_pos = f.tell()
+def _parse_etp_sub_package(f) -> tuple[dict, dict]:
+    # ETP v1 file layout:
+    #   0x00 ( 4 bytes): "EVTX" magic
+    #   0x2C (44, 4 bytes): total offset count (from CMNH section header)
+    #   0x58 (88, 4 bytes): INDX contents size (bytes)
+    #   0x5C (92, 4 bytes): padding
+    #   0x60 (96, N bytes): INDX contents
+    #     +0x00 (2 bytes): unknown
+    #     +0x02 (2 bytes): count of entries in the short (2-byte) offset table
+    #     +0x04 (16 bytes): unknown
+    #     +0x14 (20, variable): short offset table — short_count * uint16 offsets
+    #     after short table: optional 2-byte alignment pad (if file pos is not 4-byte aligned)
+    #     after alignment: long offset table — (offset_count - short_count) * uint32 offsets
+    #   0x60+N (16 bytes): FOOT section
+    #   0x60+N+16 (16 bytes): TEXT section header
+    #   0x60+N+32 onward: null-terminated strings (TEXT section body)
+    #
+    # Each offset is a character index into the TEXT body (multiply by 2 to get byte offset).
+    # offset == 0 and duplicate offsets are skipped; the record key is the offset itself.
+    # Offsets exceeding ushort range overflow into the long (4-byte uint) table.
+    f.seek(44)  # jump to CMNH section that has total offset count
+    offset_count = unpack_uint(f.read(4))
 
-        ja_records = {}
-        en_records = {}
+    f.seek(88)  # jump to INDX size field
+    indx_size = unpack_uint(f.read(4))
+    f.seek(96)  # jump to INDX contents (past padding at 92)
+    indx_contents = f.read(indx_size)
 
-        offsets_used = []
-        iterate = 0
-        indx_pos = 20  # 20 is start of offsets in indx
-        while iterate != offset_table_size:
-            iterate += 1
-            offset = unpack_ushort(indx_contents[indx_pos:indx_pos+2])
-            if offset == 0 or offset in offsets_used:
-                indx_pos += 2
-                continue
+    f.read(16)  # skip FOOT
+    f.read(16)  # skip TEXT header
+    text_pos = f.tell()
 
-            f.seek(text_pos + (offset * 2))
+    # indx_contents[2:4]: count of entries in the short (2-byte) offset table
+    short_count = unpack_ushort(indx_contents[2:4])
+    short_table_start = 20  # offset table begins at byte 20 within indx_contents
+    short_table_end = short_table_start + short_count * 2
 
-            text_str = read_cstr(f)
+    short_offsets = [o for o, in iter_unpack("<H", indx_contents[short_table_start:short_table_end])]
 
-            ja_records[offset] = {text_str: text_str}
-            en_records[offset] = {text_str: ""}
-            offsets_used.append(offset)
-            indx_pos += 2
+    # If total offsets exceed the short table, the remainder are stored as 4-byte uints.
+    # Two padding bytes ("CD AB") may precede this section to restore 4-byte alignment.
+    long_table_start = short_table_end
+    if (long_table_start + 96) % 4 != 0:  # 96 = file offset of indx_contents start
+        long_table_start += 2
+    long_count = offset_count - short_count
+    long_offsets = [o for o, in iter_unpack("<I", indx_contents[long_table_start:long_table_start + long_count * 4])]
 
+    ja_records = {}
+    offsets_seen = set()
 
-        # remaining offsets must be read as <I
-        if iterate != offset_count:
-            next_indx_pos = (iterate * 2) + 20  # 20 is where we started for offsets
-            # if current pos is not divisble by 4, next two bytes will be "CD AB". if this is true,
-            # skip over it as these are bytes to pad alignment before transitioning to reading offsets
-            # as <I
-            if diff := (next_indx_pos + 96) % 4 != 0:  # 96 is start of inside of indx table
-                next_indx_pos += 2
+    for offset in short_offsets + long_offsets:
+        if offset == 0 or offset in offsets_seen:
+            continue
+        offsets_seen.add(offset)
+        f.seek(text_pos + (offset * 2))
+        text_str = read_cstr(f)
+        ja_records[offset] = {text_str: text_str}
 
-            while iterate != offset_count:
-                iterate += 1
-                offset = unpack_uint(indx_contents[next_indx_pos:next_indx_pos+4])
-                if offset == 0 or offset in offsets_used:
-                    next_indx_pos += 4
-                    continue
-
-                f.seek(text_pos + (offset * 2))
-
-                text_str = read_cstr(f)
-
-                ja_records[offset] = {text_str: text_str}
-                en_records[offset] = {text_str: ""}
-                offsets_used.append(offset)
-                next_indx_pos += 4
-
-        return ja_records, en_records
+    en_records = {sid: {text: ""} for sid, v in ja_records.items() for text in v}
+    return ja_records, en_records
 
 
-def unpack_etp_4(file: str):
-    with open(file, "rb") as f:
-        evtx_header = unpack("4s", f.read(4))[0]
-        if evtx_header != b"EVTX":
-            return "Not an ETP file."
+def _parse_etp_smldt_msg_pkg(f) -> tuple[dict, dict]:
+    # ETP v4 file layout:
+    #   0x00 ( 4 bytes): "EVTX" magic
+    #   0x58 (88, 4 bytes): INDX table size (bytes)
+    #   0x5C (92, 4 bytes): padding
+    #   0x60 (96, N bytes): INDX table
+    #     +0x00 (2 bytes): count of 2-byte string IDs
+    #     +0x02 (2 bytes): count of entries in the short (2-byte) offset table
+    #     +0x04 (4 bytes): unknown
+    #     +0x08 (4 bytes): offset within INDX table where 4-byte string ID section begins
+    #     +0x0C (4 bytes): offset within INDX table where short (2-byte) offset table begins
+    #     +0x10 (4 bytes): offset within INDX table where long (4-byte) offset table begins
+    #     +0x14 (20, variable): 2-byte string IDs (str_table_size bytes)
+    #     at long_str_start: 4-byte string IDs (empty when all IDs fit in a ushort)
+    #     at short_offset_start: short (2-byte) offset table (offset_table_size bytes)
+    #     at long_offset_start: long (4-byte) offset table (remainder of INDX table)
+    #   0x60+N (32 bytes): FOOT section (16 bytes) + TEXT section header (16 bytes)
+    #   0x60+N+32 onward: null-terminated strings (TEXT section body)
+    #
+    # String IDs and their offsets are stored in parallel: 2-byte IDs pair with 2-byte offsets,
+    # 4-byte IDs pair with 4-byte offsets. Each offset is a character index into the TEXT body
+    # (multiply by 2 to get byte offset). Duplicate offsets are skipped; first occurrence wins.
+    f.seek(88)  # jump to INDX length
 
-        # ignore other headers and jump straight to INDX
-        f.seek(88)  # jump to INDX length
+    # size of entire INDX table (minus the first 16 bytes for the INDX header)
+    indx_size = unpack_uint(f.read(4))
+    f.seek(96)  # jump to INDX contents (past padding at 92)
+    indx_table = f.read(indx_size)
 
-        # size of entire INDX table (minus the first 16 bytes for the INDX header)
-        indx_size = unpack_uint(f.read(4))
-        f.read(4)  # jump passed junk
+    # first 2 bytes: count of 2-byte string IDs (ushort). multiply by 2 to get byte length.
+    str_table_size = unpack("<H", indx_table[0:2])[0] * 2
 
-        # read in entire indx table starting at pos 96
-        indx_table = f.read(indx_size)
+    # next 2 bytes: count of 2-byte (short) offsets (ushort). multiply by 2 to get byte length.
+    offset_table_size = unpack("<H", indx_table[2:4])[0] * 2
 
-        # go back to the beginning of the indx table at pos 96
-        f.seek(-indx_size, 1)
+    # this is not hit.
+    if str_table_size == 0:
+        print("String table length is 0. Ignoring this file because it's abnormal.")
+        return
 
-        # first 2 bytes: count of 2-byte string IDs (ushort). multiply by 2 to get byte length.
-        str_table_size = unpack("<H", f.read(2))[0] * 2
+    f.seek(96 + indx_size)  # jump past indx table
+    f.read(32)  # jump past FOOT + TEXT
+    text_pos = f.tell()
 
-        # next 2 bytes: count of 2-byte (short) offsets (ushort). multiply by 2 to get byte length.
-        offset_table_size = unpack("<H", f.read(2))[0] * 2
+    # INDX header bytes 8-11: start position (within indx_table) of the 4-byte string ID section.
+    # When all IDs fit in a ushort this equals the short offset table start (empty 4-byte section).
+    long_str_start = unpack("<I", indx_table[8:12])[0]
 
-        # this is not hit.
-        if str_table_size == 0:
-            print(f"String table length is 0 for {file}. I'm ignoring this file because it's abnormal.")
-            return
+    # INDX header bytes 12-15: start position of the short (2-byte) offset table.
+    short_offset_start = unpack("<I", indx_table[12:16])[0]
 
-        f.seek(96 + indx_size) # jump passed indx table
-        f.read(32)  # jump passed FOOT + TEXT
-        text_pos = f.tell()
+    # INDX header bytes 16-19: start position of the long (4-byte) offset table.
+    long_offset_start = unpack("<I", indx_table[16:20])[0]
 
-        # INDX header bytes 8-11: start position (within indx_table) of the 4-byte string ID section.
-        # When all IDs fit in a ushort this equals the short offset table start (empty 4-byte section).
-        long_str_start = unpack("<I", indx_table[8:12])[0]
+    # 2-byte string IDs start at byte 20.
+    short_string_table = indx_table[20:20+str_table_size]
 
-        # INDX header bytes 12-15: start position of the short (2-byte) offset table.
-        short_offset_start = unpack("<I", indx_table[12:16])[0]
+    # 4-byte string IDs follow. This section is empty when all IDs fit in a ushort.
+    long_string_table = indx_table[long_str_start:short_offset_start]
 
-        # INDX header bytes 16-19: start position of the long (4-byte) offset table.
-        long_offset_start = unpack("<I", indx_table[16:20])[0]
+    # offset tables are split into short (2-byte) and long (4-byte) sections at known positions.
+    short_offset_table = bytearray(indx_table[short_offset_start:short_offset_start+offset_table_size])
+    long_offset_table = bytearray(indx_table[long_offset_start:])
 
-        # 2-byte string IDs start at byte 20.
-        short_string_table = indx_table[20:20+str_table_size]
+    ja_records = {}
+    offsets_seen = set()
 
-        # 4-byte string IDs follow. This section is empty when all IDs fit in a ushort.
-        long_string_table = indx_table[long_str_start:short_offset_start]
+    # iterate over all string IDs: 2-byte IDs first, then 4-byte IDs.
+    all_string_ids = [s[0] for s in iter_unpack("<H", short_string_table)]
+    all_string_ids += [s[0] for s in iter_unpack("<I", long_string_table)]
 
-        # offset tables are split into short (2-byte) and long (4-byte) sections at known positions.
-        short_offset_table = bytearray(indx_table[short_offset_start:short_offset_start+offset_table_size])
-        long_offset_table = bytearray(indx_table[long_offset_start:])
+    for string_id in all_string_ids:
+        if short_offset_table:
+            offset = unpack("<H", short_offset_table[0:2])[0]
+            del short_offset_table[0:2]
+        else:
+            offset = unpack("<I", long_offset_table[0:4])[0]
+            del long_offset_table[0:4]
 
-        ja_records = {}
-        en_records = {}
-        offsets_written = []
+        # game will sometimes have string ids that are pointing to the same
+        # offset. in this case, we only want to use the first occurrence.
+        # during packing, we'll handle these multiples.
+        if offset in offsets_seen:
+            continue
+        offsets_seen.add(offset)
 
-        # iterate over all string IDs: 2-byte IDs first, then 4-byte IDs.
-        all_string_ids = [s[0] for s in iter_unpack("<H", short_string_table)]
-        all_string_ids += [s[0] for s in iter_unpack("<I", long_string_table)]
+        f.seek(text_pos + (offset * 2))
+        text_str = read_cstr(f)
+        ja_records[string_id] = {text_str: text_str}
 
-        for string_id in all_string_ids:
-            if short_offset_table:
-                offset = unpack("<H", short_offset_table[0:2])[0]
-                del short_offset_table[0:2]
-            else:
-                offset = unpack("<I", long_offset_table[0:4])[0]
-                del long_offset_table[0:4]
-
-            # game will sometimes have string ids that are pointing to the same
-            # offset. in this case, we only want to use the first occurrence.
-            # during packing, we'll handle these multiples.
-            if offset in offsets_written:
-                continue
-
-            f.seek(text_pos + (offset * 2))
-
-            text_str = read_cstr(f)
-            ja_records[string_id] = {text_str: text_str}
-            en_records[string_id] = {text_str: ""}
-            offsets_written.append(offset)
-
+    en_records = {sid: {text: ""} for sid, v in ja_records.items() for text in v}
     return ja_records, en_records
 
 
 def unpack_etp(file: str):
-    file_version = determine_etp_version(file)
-    if file_version in [0, 2]:
-        data = unpack_etp_0_2(file=file)
-    elif file_version == 1:
-        data = unpack_etp_1(file=file)
-    elif file_version == 4:
-        data = unpack_etp_4(file=file)
-    elif not file_version:
-        sys.exit("Not an ETP file.")
-    else:
-        sys.exit(f"ETP version \"{file_version}\" is not currently supported.")
+    parsers = {
+        0: _parse_etp_event_text,
+        2: _parse_etp_event_text,
+        1: _parse_etp_sub_package,
+        4: _parse_etp_smldt_msg_pkg,
+    }
+    with open(file, "rb") as f:
+        if unpack("4s", f.read(4))[0] != b"EVTX":
+            sys.exit("Not an ETP file.")
+        f.seek(15)
+        file_version = f.read(1)[0]
+        parser = parsers.get(file_version)
+        if parser is None:
+            sys.exit(f"ETP version \"{file_version}\" is not currently supported.")
+        data = parser(f)
+
     if data:
-        write_to_json(orig_filename=file, data=data[0], locale="ja")
-        write_to_json(orig_filename=file, data=data[1], locale="en")
+        for locale, records in zip(("ja", "en"), data):
+            write_to_json(orig_filename=file, data=records, locale=locale)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Read an unencrypted ETP file and dump to JSON.")
     parser.add_argument("-e", help="Unpack a single ETP file.")
-    parser.add_argument("-a", default=False, action="store_true", help="Unpack all ETPs dumped in the dump_etps folder.")
+    parser.add_argument("-a", action="store_true", help="Unpack all ETPs dumped in the dump_etps folder.")
     args = parser.parse_args()
 
     if args.e:
         unpack_etp(file=args.e)
 
     if args.a:
-        etp_files = glob.glob("../dump_etps/etps/*.etp")
-        rps_files = glob.glob("../dump_etps/rps/*/*.etp")
-        etps = etp_files + rps_files
-        for etp in etps:
+        for etp in glob.glob("../dump_etps/etps/*.etp") + glob.glob("../dump_etps/rps/*/*.etp"):
             print(etp)
             unpack_etp(file=etp)
