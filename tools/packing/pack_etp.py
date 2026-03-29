@@ -4,7 +4,7 @@ import json
 import os
 import sqlite3
 import sys
-from struct import iter_unpack, unpack
+from struct import iter_unpack, pack, unpack
 
 sys.path.append("../../")  # hack to use tools
 from tools.dump_etps.dqxcrypt.dqxcrypt import attach_client, encrypt
@@ -15,6 +15,8 @@ from tools.lib.fileops import (
     unpack_ushort,
     write_foot,
     write_text,
+    write_toof,
+    write_txet,
 )
 
 
@@ -31,10 +33,12 @@ def align_file(file_obj: object, alignment: int):
         file_obj.write(b"\x00" * pad)
 
 
-def determine_etp_version(file: str) -> int:
+def determine_etp_version(file: str):
     with open(file, "rb") as f:
-        evtx_header = unpack("4s", f.read(4))[0]
-        if evtx_header != b"EVTX":
+        magic = unpack("4s", f.read(4))[0]
+        if magic == b"XTVE":
+            return "be"
+        elif magic != b"EVTX":
             return None
         f.read(11)
         version = f.read(1)
@@ -131,6 +135,37 @@ def recalculate_headers(file_obj: object):
     write_foot(file_obj=file_obj)
 
 
+def _recalculate_headers_be(file_obj: object):
+    "Update header lengths and add TOOFs to end of file (big-endian)."
+    # update TXET sizing
+    file_obj.seek(88)
+    indx_size = unpack(">I", file_obj.read(4))[0]
+    file_obj.read(4)  # read past padding
+    file_obj.read(indx_size)
+    file_obj.read(16)  # read past TOOF
+    file_obj.read(16)  # read past TXET header
+    text_start = file_obj.tell()
+    text_size = file_obj.seek(0, 2) - text_start
+    file_obj.seek(text_start - 16 + 8)
+    file_obj.write(pack(">I", text_size) + b"\x00\x00\x00\x00")
+    file_obj.seek(0, 2)
+    write_toof(file_obj=file_obj)
+
+    # calculate new size for ajlb header
+    blja_size = file_obj.seek(0, 2) - 80
+    file_obj.seek(72)
+    file_obj.write(pack(">I", blja_size))
+    file_obj.seek(0, 2)
+    write_toof(file_obj=file_obj)
+
+    # calculate new size for xtve header
+    evtx_size = file_obj.seek(0, 2) - 16
+    file_obj.seek(8)
+    file_obj.write(pack(">I", evtx_size))
+    file_obj.seek(0, 2)
+    write_toof(file_obj=file_obj)
+
+
 def _build_etp_event_text(json_list: list, src_etp: str):
     "Builds an ETP file for file versions 0 and 2."
     # grab original file header data we'll copy over to new file
@@ -165,7 +200,68 @@ def _build_etp_event_text(json_list: list, src_etp: str):
 
 
 def _build_etp_sub_package(json_list: list, src_etp: str):
-    "Builds an ETP file for file version 1."
+    "Builds an ETP file for file version 1 (LE) or BE."
+    with open(src_etp, "rb") as f:
+        is_be = f.read(4) == b"XTVE"
+
+    if is_be:
+        # BE file layout: (string_id: uint32_BE, byte_offset: uint32_BE) pairs in INDX.
+        # Text body is UTF-8 null-terminated strings; offsets are direct byte offsets.
+        with open(src_etp, "rb") as f:
+            orig_etp_data = f.read(96)
+            indx_size = unpack(">I", orig_etp_data[88:92])[0]
+            orig_indx = f.read(indx_size)
+            f.read(32)  # skip TOOF + TXET header
+            text_pos = f.tell()
+            # pre-read all original strings for fallback when a string_id is absent from json_list
+            orig_strings = {}
+            for sid, off in iter_unpack(">II", orig_indx):
+                if sid == 0:
+                    continue
+                f.seek(text_pos + off)
+                buf = bytearray()
+                while True:
+                    ch = f.read(1)
+                    if ch == b"\x00":
+                        break
+                    buf.extend(ch)
+                orig_strings[sid] = buf.decode("utf-8")
+
+        str_bytes = bytearray()
+        orig_offset_to_new = {}  # deduplication: orig_byte_offset -> new_byte_offset
+        new_indx = bytearray()
+
+        for string_id, orig_offset in iter_unpack(">II", orig_indx):
+            if string_id == 0:
+                new_indx += pack(">II", 0, 0)
+                continue
+            if orig_offset in orig_offset_to_new:
+                new_offset = orig_offset_to_new[orig_offset]
+            else:
+                new_offset = len(str_bytes)
+                orig_offset_to_new[orig_offset] = new_offset
+                str_key = str(string_id)
+                original = orig_strings.get(string_id, "")
+                record = json_list.get(str_key)
+                if record is not None and next(iter(record)) == original:
+                    # source text in JSON matches original ETP string — use translation
+                    str_bytes += _pick_translation(record)
+                else:
+                    # key absent or source text mismatch (wrong JSON) — use original
+                    str_bytes += original.encode("utf-8") + b"\x00"
+            new_indx += pack(">II", string_id, new_offset)
+
+        etp_file = os.path.basename(src_etp)
+        with open(f"new_etp/{etp_file}", "w+b") as etp_f:
+            etp_f.write(orig_etp_data)
+            etp_f.write(new_indx)
+            write_toof(file_obj=etp_f)
+            write_txet(file_obj=etp_f)
+            etp_f.write(str_bytes)
+            align_file(file_obj=etp_f, alignment=16)
+            _recalculate_headers_be(file_obj=etp_f)
+        return
+
     with open(src_etp, "rb") as f:
         orig_etp_data = f.read(96)
         offset_count = unpack_uint(orig_etp_data[44:48])  # get from cmnh
@@ -400,6 +496,7 @@ def build_etp(json_file: list, src_etp: str):
         0: _build_etp_event_text,
         2: _build_etp_event_text,
         1: _build_etp_sub_package,
+        "be": _build_etp_sub_package,
         4: _build_etp_smldt_msg_pkg,
     }
     file_version = determine_etp_version(file=src_etp)

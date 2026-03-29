@@ -28,6 +28,16 @@ def write_text(file_obj: object):
     return file_obj.write(text)
 
 
+def write_toof(file_obj: object):
+    """Write big-endian FOOT section (TOOF)."""
+    return file_obj.write(b"\x54\x4F\x4F\x46\x00\x00\x00\x10\x00\x00\x00\x00\x00\x00\x00\x00")
+
+
+def write_txet(file_obj: object):
+    """Write big-endian TEXT section header (TXET)."""
+    return file_obj.write(b"\x54\x58\x45\x54\x00\x00\x00\x10\x00\x00\x00\x00\x00\x00\x00\x00")
+
+
 def read_cstr(f: object) -> str:
     buf = bytearray()
     while True:
