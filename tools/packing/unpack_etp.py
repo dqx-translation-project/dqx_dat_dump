@@ -54,7 +54,42 @@ def _parse_etp_event_text(f) -> tuple[dict, dict]:
 
 
 def _parse_etp_sub_package(f) -> tuple[dict, dict]:
-    # ETP v1 file layout:
+    f.seek(0)
+    is_be = f.read(4) == b"XTVE"
+
+    if is_be:
+        # Big-endian ETP file layout (all three BE file types use this unified format):
+        #   0x00 ( 4 bytes): "XTVE" magic (big-endian EVTX)
+        #   0x58 (88, 4 bytes): INDX contents size (bytes, big-endian)
+        #   0x5C (92, 4 bytes): padding
+        #   0x60 (96, N bytes): INDX contents — pairs of (string_id: uint32_BE, offset: uint32_BE)
+        #   0x60+N (16 bytes): TOOF section (big-endian FOOT)
+        #   0x60+N+16 (16 bytes): TXET section header (big-endian TEXT)
+        #   0x60+N+32 onward: null-terminated UTF-8 strings (text body)
+        #
+        # Each entry maps a string_id to a byte offset into the text body.
+        # string_id == 0 entries are skipped.
+        f.seek(88)
+        indx_size = unpack(">I", f.read(4))[0]
+        f.read(4)  # skip padding
+        indx_contents = f.read(indx_size)
+
+        f.read(16)  # skip TOOF
+        f.read(16)  # skip TXET header
+        text_pos = f.tell()
+
+        ja_records = {}
+        for string_id, offset in iter_unpack(">II", indx_contents):
+            if string_id == 0:
+                continue
+            f.seek(text_pos + offset)
+            text_str = read_cstr(f)
+            ja_records[string_id] = {text_str: text_str}
+
+        en_records = {sid: {text: ""} for sid, v in ja_records.items() for text in v}
+        return ja_records, en_records
+
+    # LE ETP v1 file layout:
     #   0x00 ( 4 bytes): "EVTX" magic
     #   0x2C (44, 4 bytes): total offset count (from CMNH section header)
     #   0x58 (88, 4 bytes): INDX contents size (bytes)
@@ -214,13 +249,18 @@ def unpack_etp(file: str):
         0: _parse_etp_event_text,
         2: _parse_etp_event_text,
         1: _parse_etp_sub_package,
+        "be": _parse_etp_sub_package,
         4: _parse_etp_smldt_msg_pkg,
     }
     with open(file, "rb") as f:
-        if unpack("4s", f.read(4))[0] != b"EVTX":
+        magic = unpack("4s", f.read(4))[0]
+        if magic == b"XTVE":
+            file_version = "be"
+        elif magic == b"EVTX":
+            f.seek(15)
+            file_version = f.read(1)[0]
+        else:
             sys.exit("Not an ETP file.")
-        f.seek(15)
-        file_version = f.read(1)[0]
         parser = parsers.get(file_version)
         if parser is None:
             sys.exit(f"ETP version \"{file_version}\" is not currently supported.")
